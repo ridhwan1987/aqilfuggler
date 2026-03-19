@@ -465,9 +465,9 @@ const LS = {
 
 function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
 
-function saveResult(subject, mode, score, total, breakdown) {
+function saveResult(subject, mode, score, total, breakdown, difficulty) {
   const all = LS.get('results',[]);
-  all.push({ iso:new Date().toISOString(), date:new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'}), subject, mode, score, total, pct:Math.round((score/total)*100), breakdown });
+  all.push({ iso:new Date().toISOString(), date:new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'}), subject, mode, score, total, pct:Math.round((score/total)*100), breakdown, difficulty: difficulty || 'unknown' });
   LS.set('results', all);
 }
 function getResults(){ return LS.get('results',[]); }
@@ -951,14 +951,14 @@ function DrillScreen({ subject, topic, onDone, onBack, onHome }) {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN: RESULTS
 // ═══════════════════════════════════════════════════════════════
-function ResultsScreen({ subject, score, total, breakdown, mode, onHome, onRetry }) {
+function ResultsScreen({ subject, score, total, breakdown, mode, difficulty, onHome, onRetry }) {
   const cfg = CFG[subject];
   const pct = Math.round((score/total)*100);
   const star = pct>=90?'🏆':pct>=70?'🌟':pct>=50?'👍':'💪';
   const msg = pct>=90?'Outstanding!':pct>=70?'Great job!':pct>=50?'Good effort!':'Keep going!';
   const showConf = pct>=70;
 
-  useEffect(()=>{ saveResult(subject, mode, score, total, breakdown); }, []);
+  useEffect(()=>{ saveResult(subject, mode, score, total, breakdown, difficulty); }, []);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor:cfg.bg }}>
@@ -1194,9 +1194,10 @@ function ParentDashboard({ onBack }) {
         <div className="bg-white rounded-2xl p-5 shadow">
           <h3 className="text-base font-bold text-gray-800 mb-3">Recent Sessions</h3>
           <div className="space-y-2">
-            {all.slice().reverse().slice(0, 15).map((r, i) => (
+            {all.slice().reverse().map((r, i) => (
               <div key={i} className="flex justify-between text-sm py-2 border-b last:border-0">
                 <span className="text-gray-600">{r.date} — {r.subject} ({r.mode})</span>
+                <span style={{background:'#eee',borderRadius:'4px',padding:'2px 6px',fontSize:'0.75em',textTransform:'capitalize'}}>{r.difficulty || '—'}</span>
                 <span className={`font-bold ${r.pct >= 70 ? 'text-emerald-600' : 'text-red-500'}`}>{r.pct}%</span>
               </div>
             ))}
@@ -1226,7 +1227,7 @@ function App() {
     if (m==='drill') { setMode('drill'); setScreen('select-topic'); }
     else { setMode('quiz'); setScreen('quiz'); }
   }
-  function onDone(score, total, breakdown) { setResult({score,total,breakdown}); setScreen('result'); }
+  function onDone(score, total, breakdown) { setResult({score,total,breakdown,difficulty}); setScreen('result'); }
   function onDrillDone() { setResult({score:10,total:10,breakdown:{[topic]:{correct:10,total:10}}}); setScreen('result'); }
 
   return (
@@ -1237,7 +1238,7 @@ function App() {
       {screen==='quiz' && <QuizScreen subject={subject} onDone={onDone} onBack={()=>setScreen('home')} difficulty={difficulty} />}
       {screen==='drill' && <DrillScreen subject={subject} topic={topic} onDone={onDrillDone} onBack={()=>setScreen('select-topic')} onHome={()=>setScreen('home')} />}
       {screen==='result' && result && (
-        <ResultsScreen subject={subject} score={result.score} total={result.total} breakdown={result.breakdown} mode={mode}
+        <ResultsScreen subject={subject} score={result.score} total={result.total} breakdown={result.breakdown} mode={mode} difficulty={result.difficulty}
           onHome={()=>setScreen('home')}
           onRetry={()=>{ if(mode==='drill') setScreen('select-topic'); else setScreen('subject-select'); }} />
       )}
