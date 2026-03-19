@@ -485,6 +485,32 @@ function subjectStats(sub) {
   return { avg, best, count:rs.length, perfectDrills, quizAvg, drillAvg };
 }
 
+function getFirebaseUrl() {
+  return (localStorage.getItem(AF_PREFIX + 'firebase_url') || '').trim();
+}
+async function syncToFirebase() {
+  const url = getFirebaseUrl();
+  if (!url) return;
+  try {
+    await fetch(url.replace(/\/$/, '') + '/af_data.json', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ results: getResults() })
+    });
+  } catch(e) { console.warn('Firebase sync failed', e); }
+}
+async function loadFromFirebase() {
+  const url = getFirebaseUrl();
+  if (!url) return false;
+  try {
+    const res = await fetch(url.replace(/\/$/, '') + '/af_data.json');
+    const data = await res.json();
+    if (!data) return false;
+    if (data.results) LS.set('results', data.results);
+    return true;
+  } catch(e) { console.warn('Firebase load failed', e); return false; }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // CONFETTI
 // ═══════════════════════════════════════════════════════════════
@@ -496,7 +522,7 @@ function Confetti() {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN: HOME
 // ═══════════════════════════════════════════════════════════════
-function HomeScreen({ onSelect, onProgress }) {
+function HomeScreen({ onSelect, onProgress, onParent }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-teal-50 flex flex-col items-center justify-center p-6">
       <div className="text-center mb-8">
@@ -524,6 +550,10 @@ function HomeScreen({ onSelect, onProgress }) {
       <button onClick={onProgress} className="flex items-center gap-2 bg-white shadow rounded-xl px-6 py-3 hover:shadow-md transition-all">
         <span className="text-2xl">📊</span>
         <span className="text-sm font-semibold text-gray-700">My Progress</span>
+      </button>
+
+      <button onClick={onParent} className="mt-4 text-sm text-gray-400 hover:text-gray-600 underline">
+        🔒 Parent Dashboard
       </button>
     </div>
   );
@@ -1053,6 +1083,133 @@ function TopicSelectScreen({ subject, onSelect, onBack }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SCREEN: PARENT DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+function ParentDashboard({ onBack }) {
+  const [pin, setPin] = useState('');
+  const [open, setOpen] = useState(false);
+  const [err, setErr] = useState('');
+  const [, refresh] = useState(0);
+  const [fbInput, setFbInput] = useState(getFirebaseUrl());
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState('');
+
+  function tryPin() {
+    if (pin === PARENT_PIN) { setOpen(true); setErr(''); }
+    else setErr('Incorrect PIN. Try again.');
+  }
+
+  if (!open) return (
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6">
+      <button onClick={onBack} className="self-start text-gray-400 hover:text-gray-600 mb-6 text-sm">← Back</button>
+      <div className="bg-white rounded-2xl shadow p-8 w-full max-w-xs text-center">
+        <div className="text-4xl mb-3">🔒</div>
+        <h2 className="text-xl font-bold text-gray-700 mb-4">Parent Dashboard</h2>
+        <input type="password" placeholder="Enter PIN"
+          value={pin} onChange={e => setPin(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && tryPin()}
+          className="w-full border-2 border-gray-200 rounded-xl p-3 text-center text-xl mb-3 focus:outline-none focus:border-blue-400 tracking-widest" />
+        {err && <p className="text-red-500 text-sm mb-2">{err}</p>}
+        <button onClick={tryPin} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl">Unlock</button>
+        <p className="text-gray-400 text-xs mt-3">Default PIN: 1234</p>
+      </div>
+    </div>
+  );
+
+  const all = getResults();
+
+  function saveFbUrl() {
+    localStorage.setItem(AF_PREFIX + 'firebase_url', fbInput.trim());
+    setSyncMsg('Saving…');
+    syncToFirebase().then(() => {
+      setSyncMsg('Saved & uploaded! On your other device, enter the same URL and click Refresh.');
+    });
+  }
+
+  function doRefresh() {
+    setSyncing(true); setSyncMsg('');
+    loadFromFirebase().then(ok => {
+      setSyncing(false);
+      setSyncMsg(ok ? 'Data refreshed from cloud!' : 'Could not load — check the URL or Firebase rules.');
+      refresh(n => n + 1);
+    });
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="bg-blue-700 text-white p-5 flex items-center gap-3">
+        <button onClick={onBack} className="text-white/70 hover:text-white text-xl">←</button>
+        <h1 className="text-xl font-bold">Parent Dashboard</h1>
+      </div>
+      <div className="max-w-lg mx-auto p-6 w-full space-y-4">
+
+        {/* Cloud Sync */}
+        <div className="bg-white rounded-2xl p-5 shadow">
+          <h3 className="text-base font-bold text-gray-700 mb-2">☁️ Cloud Sync (monitor from any device)</h3>
+          <p className="text-xs text-gray-400 mb-3">Paste your Firebase Realtime Database URL so progress syncs across devices. <a href="https://console.firebase.google.com" target="_blank" className="text-blue-500 underline">Get a free URL here</a> → create project → Realtime Database → Start in test mode → copy the URL.</p>
+          <div className="flex gap-2">
+            <input value={fbInput} onChange={e => setFbInput(e.target.value)}
+              placeholder="https://your-project-default-rtdb.firebaseio.com"
+              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-400" />
+            <button onClick={saveFbUrl} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-2 rounded-lg">Save</button>
+          </div>
+          <button onClick={doRefresh} disabled={syncing}
+            className="mt-2 w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-bold py-2 rounded-lg">
+            {syncing ? 'Refreshing…' : '↻ Refresh from Cloud'}
+          </button>
+          {syncMsg && <p className="text-xs mt-2 text-center text-gray-500">{syncMsg}</p>}
+        </div>
+
+        {/* Stats overview */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl p-4 shadow text-center">
+            <div className="text-3xl">✅</div>
+            <div className="text-2xl font-bold text-blue-700">{all.length}</div>
+            <div className="text-xs text-gray-500">Total Sessions</div>
+          </div>
+          <div className="bg-white rounded-2xl p-4 shadow text-center">
+            <div className="text-3xl">🏆</div>
+            <div className="text-2xl font-bold text-emerald-600">{all.length ? Math.round(all.reduce((a,b)=>a+b.pct,0)/all.length) : 0}%</div>
+            <div className="text-xs text-gray-500">Overall Avg</div>
+          </div>
+        </div>
+
+        {/* Per-subject stats */}
+        {Object.entries(CFG).map(([key, cfg]) => {
+          const st = subjectStats(key);
+          if (!st) return null;
+          return (
+            <div key={key} className="bg-white rounded-2xl p-5 shadow">
+              <h3 className="text-base font-bold text-gray-800 mb-3">{cfg.emoji} {cfg.label}</h3>
+              <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                <div><div className="font-bold text-blue-700">{st.avg}%</div><div className="text-xs text-gray-400">Average</div></div>
+                <div><div className="font-bold text-emerald-600">{st.best}%</div><div className="text-xs text-gray-400">Best</div></div>
+                <div><div className="font-bold text-gray-700">{st.count}</div><div className="text-xs text-gray-400">Sessions</div></div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Recent sessions */}
+        <div className="bg-white rounded-2xl p-5 shadow">
+          <h3 className="text-base font-bold text-gray-800 mb-3">Recent Sessions</h3>
+          <div className="space-y-2">
+            {all.slice().reverse().slice(0, 15).map((r, i) => (
+              <div key={i} className="flex justify-between text-sm py-2 border-b last:border-0">
+                <span className="text-gray-600">{r.date} — {r.subject} ({r.mode})</span>
+                <span className={`font-bold ${r.pct >= 70 ? 'text-emerald-600' : 'text-red-500'}`}>{r.pct}%</span>
+              </div>
+            ))}
+            {all.length === 0 && <p className="text-gray-400 text-sm">No sessions yet.</p>}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // APP ROOT
 // ═══════════════════════════════════════════════════════════════
 function App() {
@@ -1074,7 +1231,7 @@ function App() {
 
   return (
     <>
-      {screen==='home' && <HomeScreen onSelect={onSubjectSelect} onProgress={()=>setScreen('progress')} />}
+      {screen==='home' && <HomeScreen onSelect={onSubjectSelect} onProgress={()=>setScreen('progress')} onParent={()=>setScreen('parent')} />}
       {screen==='subject-select' && <SubjectSelectScreen subject={subject} onMode={onMode} onBack={()=>setScreen('home')} />}
       {screen==='select-topic' && <TopicSelectScreen subject={subject} onSelect={t=>{setTopic(t);setScreen('drill');}} onBack={()=>setScreen('subject-select')} />}
       {screen==='quiz' && <QuizScreen subject={subject} onDone={onDone} onBack={()=>setScreen('home')} difficulty={difficulty} />}
@@ -1085,6 +1242,7 @@ function App() {
           onRetry={()=>{ if(mode==='drill') setScreen('select-topic'); else setScreen('subject-select'); }} />
       )}
       {screen==='progress' && <ProgressScreen onBack={()=>setScreen('home')} />}
+      {screen==='parent' && <ParentDashboard onBack={()=>setScreen('home')} />}
     </>
   );
 }
