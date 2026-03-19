@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aqil PSLE Champion 🏆</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Poppins:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Nunito', system-ui, sans-serif; }
+    @keyframes pop { 0%{transform:scale(0.8);opacity:0} 100%{transform:scale(1);opacity:1} }
+    .pop { animation: pop 0.25s ease-out; }
+    @keyframes confetti-fall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+    .confetti-piece { position:fixed; width:10px; height:10px; border-radius:2px; animation:confetti-fall 2s ease-in forwards; pointer-events:none; z-index:9999; }
+  </style>
+</head>
+<body class="bg-slate-50">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ═══════════════════════════════════════════════════════════════
+// QUESTION BANKS
+// ═══════════════════════════════════════════════════════════════
+const QB = {
+  english: [
+    // ── Grammar (easy, drill) ──
+    { id:'e01', section:'Grammar', tag:'grammar', difficulty:'easy', q:'Neither Ali nor his friends ___ ready.', opts:['was','were','is','are'], ans:1, hint:'Neither…nor → verb agrees with the NEAREST noun', exp:'<strong>were</strong> — nearest noun "friends" is plural' },
+    { id:'e02', section:'Grammar', tag:'grammar', difficulty:'easy', q:'She has been studying for the exam ___ eight in the morning.', opts:['for','since','during','at'], ans:1, hint:'A specific point in time uses this preposition', exp:'<strong>since</strong> — use "since" with a specific time point; "for" with a duration' },
+    { id:'e03', section:'Grammar', tag:'grammar', difficulty:'easy', q:'If I ___ you, I would apologise immediately.', opts:['am','was','were','be'], ans:2, hint:'Hypothetical "if" sentences use the subjunctive', exp:'<strong>were</strong> — "If I were you" is the correct subjunctive form, not "was"' },
+    { id:'e04', section:'Grammar', tag:'grammar', difficulty:'easy', q:'The cake ___ eaten before we arrived.', opts:['has been','was','had been','were'], ans:2, hint:'Action completed BEFORE another past action → past perfect', exp:'<strong>had been</strong> eaten — past perfect passive; the eating happened before our arrival' },
+    { id:'e05', section:'Grammar', tag:'grammar', difficulty:'easy', q:'He runs ___ than anyone else on the team.', opts:['fast','faster','fastest','more faster'], ans:1, hint:'Comparing two things — what degree?', exp:'<strong>faster</strong> — comparative form (-er) used when comparing two' },
+    // ── Vocabulary (easy, drill) ──
+    { id:'e06', section:'Vocabulary', tag:'vocab', difficulty:'easy', q:'Which word means "to make something worse"?', opts:['improve','deteriorate','resolve','enhance'], ans:1, hint:'The opposite of making something better', exp:'<strong>deteriorate</strong> means to become progressively worse' },
+    { id:'e07', section:'Vocabulary', tag:'vocab', difficulty:'easy', q:'The athlete was ___ about competing in the finals — she could barely sleep.', opts:['anxious','bored','indifferent','content'], ans:0, hint:'Someone who cannot sleep before a big event feels…', exp:'<strong>anxious</strong> — worried and unable to relax before an important event' },
+    { id:'e08', section:'Vocabulary', tag:'vocab', difficulty:'easy', q:'What does the idiom "burning the midnight oil" mean?', opts:['Starting a fire','Wasting energy','Working or studying late at night','Feeling very hot'], ans:2, hint:'Think about what people used before electricity — oil lamps late at night', exp:'"<strong>Burning the midnight oil</strong>" means staying up late to work or study' },
+    // ── Editing (easy, drill) ──
+    { id:'e09', section:'Editing', tag:'editing', difficulty:'easy', q:'Find the error: "The committee have decided to postpone the event."', opts:['committee','have','decided','postpone'], ans:1, hint:'Collective nouns (committee, team, class) take singular verbs in formal English', exp:'"committee" is a collective noun → <strong>has</strong> decided (not "have")' },
+    { id:'e10', section:'Editing', tag:'editing', difficulty:'easy', q:'Find the error: "She laid on the sofa and fell asleep."', opts:['She','laid','sofa','fell'], ans:1, hint:'"Lay" means to recline. "Laid" is the past of "lay" (to put/place)', exp:'<strong>lay</strong> — "lay on the sofa" (to recline). "Laid" is past tense of "lay" (to place something)' },
+    // ── Comprehension (easy, drill) ──
+    { id:'e11', section:'Comprehension', tag:'comp', difficulty:'easy', passage:'The Amazon rainforest, often called the "lungs of the Earth", produces about 20% of the world\'s oxygen. However, deforestation has destroyed vast areas, threatening thousands of species. Scientists warn that if current rates continue, the rainforest may reach a "tipping point" — after which it cannot recover on its own.', q:'Why is the Amazon called the "lungs of the Earth"?', opts:['It is very large','It produces a large portion of the world\'s oxygen','It is home to many animals','Scientists study it'], ans:1, hint:'Find the sentence that explains the nickname', exp:'The passage states it "<strong>produces about 20% of the world\'s oxygen</strong>" — like lungs produce oxygen for the body' },
+    { id:'e12', section:'Comprehension', tag:'comp', difficulty:'easy', passage:'The Amazon rainforest, often called the "lungs of the Earth", produces about 20% of the world\'s oxygen. However, deforestation has destroyed vast areas, threatening thousands of species. Scientists warn that if current rates continue, the rainforest may reach a "tipping point" — after which it cannot recover on its own.', q:'What does "tipping point" suggest about the rainforest?', opts:['It will grow back quickly','It will never be damaged','There is a point of no return for recovery','Scientists are optimistic'], ans:2, hint:'After the tipping point, the rainforest "cannot recover on its own"', exp:'"<strong>Tipping point</strong>" implies a critical threshold — beyond it, the damage is irreversible' },
+    // ── Grammar Cloze (easy, drill) ──
+    { id:'e13', section:'Grammar Cloze', tag:'cloze', difficulty:'easy', passage:'Every morning, Aqil (1)___ up at 6am to prepare for school. His mother (2)___ breakfast while he (3)___ his teeth.', q:'(1) Aqil ___ up at 6am', opts:['wake','wakes','woken','waking'], ans:1, hint:'He = singular third person present tense', exp:'<strong>wakes</strong> — third person singular, simple present' },
+    { id:'e14', section:'Grammar Cloze', tag:'cloze', difficulty:'easy', passage:'Every morning, Aqil (1)___ up at 6am to prepare for school. His mother (2)___ breakfast while he (3)___ his teeth.', q:'(2) His mother ___ breakfast', opts:['prepare','prepares','preparing','prepared'], ans:1, hint:'His mother = singular, present tense', exp:'<strong>prepares</strong> — singular subject, simple present' },
+    // ── Medium / Quiz-only ──
+    { id:'e15', section:'Synthesis', tag:'synthesis', difficulty:'medium', pool:'quiz', q:'Combine using "Despite": "He trained hard. He did not qualify for the finals."', opts:['Despite training hard, he did not qualify for the finals.','Despite he trained hard, he did not qualify.','He trained hard despite not qualify.','Despite his hard training, he qualified.'], ans:0, hint:'"Despite" + noun/gerund phrase, followed by the contrasting result', exp:'<strong>"Despite training hard, he did not qualify for the finals."</strong> — "Despite" + gerund (training), no "he" after' },
+    { id:'e16', section:'Synthesis', tag:'synthesis', difficulty:'medium', pool:'quiz', q:'"She did not finish the race." Rewrite beginning with "She failed..."', opts:['She failed to finish the race.','She failed finishing the race.','She failed that finish the race.','She had failed finish the race.'], ans:0, hint:'fail + to + base verb', exp:'<strong>"She failed to finish the race."</strong> — "fail" is followed by an infinitive (to + verb)' },
+    { id:'e17', section:'Grammar', tag:'grammar', difficulty:'medium', pool:'quiz', q:'Which sentence uses the passive voice correctly?', opts:['The trophy was gave to the winner.','The trophy was given to the winner.','The trophy given to the winner.','The trophy has gave to the winner.'], ans:1, hint:'Passive: was/were + past participle (not simple past)', exp:'<strong>"The trophy was given to the winner."</strong> — was + past participle (given, not gave)' },
+    { id:'e18', section:'Vocabulary', tag:'vocab', difficulty:'medium', pool:'quiz', q:'The word "benevolent" most closely means:', opts:['strict and firm','well-meaning and kind','brave and fearless','loud and boisterous'], ans:1, hint:'"Bene-" from Latin means "good"', exp:'<strong>benevolent</strong> — well-meaning, kindly, and generous toward others' },
+    { id:'e19', section:'Comprehension', tag:'comp', difficulty:'medium', pool:'quiz', passage:'The Amazon rainforest, often called the "lungs of the Earth", produces about 20% of the world\'s oxygen. However, deforestation has destroyed vast areas, threatening thousands of species. Scientists warn that if current rates continue, the rainforest may reach a "tipping point" — after which it cannot recover on its own.', q:'What is the author\'s purpose in writing this passage?', opts:['To entertain readers with a story','To explain how oxygen is made','To warn about the dangers of deforestation','To describe Amazon animals'], ans:2, hint:'What is the main concern raised throughout the passage?', exp:'The author\'s purpose is to <strong>warn</strong> — the passage highlights deforestation\'s threat and the risk of irreversible damage' },
+    { id:'e20', section:'Editing', tag:'editing', difficulty:'medium', pool:'quiz', q:'Find the error: "Each of the contestants have to submit their entry by Monday."', opts:['Each of','contestants','have','their entry'], ans:2, hint:'"Each" is always singular — what verb follows?', exp:'"Each" is singular → should be <strong>has</strong> to submit, not "have"' },
+    { id:'e21', section:'Grammar Cloze', tag:'cloze', difficulty:'medium', pool:'quiz', q:'Choose: "He is the ___ of the two brothers — always ready to help."', opts:['kind','kinder','kindest','more kindest'], ans:1, hint:'Comparing exactly TWO → comparative form', exp:'<strong>kinder</strong> — comparing two brothers, use comparative (-er), not superlative (-est)' },
+    { id:'e22', section:'Synthesis', tag:'synthesis', difficulty:'medium', pool:'quiz', q:'Rewrite using "so…that": "The bag was very heavy. She could not lift it."', opts:['The bag was so heavy that she could not lift it.','The bag so heavy that she not lift it.','The bag was so heavy so she could not lift it.','So heavy the bag that she could not lift it.'], ans:0, hint:'"so + adjective + that + result clause"', exp:'<strong>"The bag was so heavy that she could not lift it."</strong> — correct "so…that" structure' },
+    // ── Hard / Quiz-only ──
+    { id:'e23', section:'Comprehension', tag:'comp', difficulty:'hard', pool:'quiz', passage:'The Amazon rainforest, often called the "lungs of the Earth", produces about 20% of the world\'s oxygen. However, deforestation has destroyed vast areas, threatening thousands of species. Scientists warn that if current rates continue, the rainforest may reach a "tipping point" — after which it cannot recover on its own.', q:'Which literary device is used in "lungs of the Earth"?', opts:['Simile','Metaphor','Personification','Alliteration'], ans:1, hint:'Is there "like" or "as"? No — so it\'s a direct comparison.', exp:'<strong>Metaphor</strong> — the rainforest is directly called "lungs", not compared using "like" or "as"' },
+    { id:'e24', section:'Grammar', tag:'grammar', difficulty:'hard', pool:'quiz', q:'"He ___ for three hours before the power went out." Choose the correct form.', opts:['studied','has studied','had been studying','was studying'], ans:2, hint:'Action ongoing for a duration BEFORE another past event → which perfect tense?', exp:'<strong>had been studying</strong> — past perfect continuous: ongoing action before a past interruption' },
+    { id:'e25', section:'Vocabulary', tag:'vocab', difficulty:'hard', pool:'quiz', q:'The committee\'s decision was met with ___ — few members spoke against it.', opts:['uproar','acquiescence','indignation','pandemonium'], ans:1, hint:'"few members spoke against it" — what does this suggest about the reaction?', exp:'<strong>acquiescence</strong> — passive agreement or acceptance without protest; fitting since few objected' },
+    { id:'e26', section:'Synthesis', tag:'synthesis', difficulty:'hard', pool:'quiz', q:'Combine using a relative clause: "The scientist won the Nobel Prize. Her research changed medicine."', opts:['The scientist, whose research changed medicine, won the Nobel Prize.','The scientist which research changed medicine won the Nobel Prize.','The scientist who research changed medicine won the Nobel Prize.','The scientist, who research changed medicine, won the Nobel Prize.'], ans:0, hint:'Use "whose" for possession — her research = whose research', exp:'<strong>"The scientist, whose research changed medicine, won the Nobel Prize."</strong> — "whose" shows possession' },
+  ],
+
+  math: [
+    // ── Section A: MCQ (easy, drill) ──
+    { id:'m01', section:'Section A: MCQ', tag:'mcq', difficulty:'easy', q:'What is the value of 3² + 4²?', opts:['25','49','14','7'], ans:0, hint:'3² = 9, 4² = 16', exp:'3² + 4² = 9 + 16 = <strong>25</strong>' },
+    { id:'m02', section:'Section A: MCQ', tag:'mcq', difficulty:'easy', q:'Simplify: 3a + 5b − a + 2b', opts:['2a + 7b','4a + 3b','2a + 3b','4a + 7b'], ans:0, hint:'Collect like terms: 3a − a = 2a, 5b + 2b = 7b', exp:'3a − a = 2a; 5b + 2b = 7b → <strong>2a + 7b</strong>' },
+    { id:'m03', section:'Section A: MCQ', tag:'mcq', difficulty:'easy', q:'Which of the following is a prime number?', opts:['51','57','59','63'], ans:2, hint:'Check divisibility: 51=3×17, 57=3×19, 59=?, 63=9×7', exp:'<strong>59</strong> is prime — it has no factors other than 1 and itself' },
+    { id:'m04', section:'Section A: MCQ', tag:'mcq', difficulty:'easy', q:'A triangle has angles 47° and 68°. What is the third angle?', opts:['65°','75°','55°','85°'], ans:0, hint:'Sum of angles in a triangle = 180°', exp:'180° − 47° − 68° = <strong>65°</strong>' },
+    { id:'m05', section:'Section A: MCQ', tag:'mcq', difficulty:'easy', q:'The mean of 5 numbers is 12. Their sum is:', opts:['60','17','5','2.4'], ans:0, hint:'Mean = Sum ÷ Count, so Sum = Mean × Count', exp:'Sum = 12 × 5 = <strong>60</strong>' },
+    // ── Section B: Short Answer (easy, drill) ──
+    { id:'m06', section:'Section B: Short Answer', tag:'short', difficulty:'easy', q:'Solve: 4x − 7 = 17. What is x?', opts:['5','6','7','8'], ans:1, hint:'Add 7 to both sides first, then divide by 4', exp:'4x = 17 + 7 = 24; x = 24 ÷ 4 = <strong>6</strong>' },
+    { id:'m07', section:'Section B: Short Answer', tag:'short', difficulty:'easy', q:'Express 45 minutes as a fraction of 3 hours in simplest form.', opts:['1/4','1/3','15/36','3/12'], ans:0, hint:'3 hours = 180 minutes. Then simplify 45/180', exp:'45/180 = 1/4 → <strong>1/4</strong>' },
+    { id:'m08', section:'Section B: Short Answer', tag:'short', difficulty:'easy', q:'A rectangle has area 84 cm² and length 12 cm. Find its perimeter.', opts:['38 cm','40 cm','42 cm','44 cm'], ans:0, hint:'Width = Area ÷ Length. Then Perimeter = 2×(L+W)', exp:'W = 84÷12 = 7 cm. P = 2×(12+7) = 2×19 = <strong>38 cm</strong>' },
+    { id:'m09', section:'Section B: Short Answer', tag:'short', difficulty:'easy', q:'Find the area of a circle with diameter 14 cm. (Use π = 22/7)', opts:['44 cm²','88 cm²','154 cm²','616 cm²'], ans:2, hint:'Radius = diameter ÷ 2 = 7 cm. Area = π × r²', exp:'Area = (22/7) × 7 × 7 = 22 × 7 = <strong>154 cm²</strong>' },
+    { id:'m10', section:'Section B: Short Answer', tag:'short', difficulty:'easy', q:'The ratio of red to blue marbles is 2:5. There are 35 marbles in total. How many are red?', opts:['10','14','21','25'], ans:0, hint:'Total parts = 7. Each part = 35 ÷ 7 = 5', exp:'Red = 2 × 5 = <strong>10</strong>' },
+    // ── Section C: Word Problems (easy, drill) ──
+    { id:'m11', section:'Section C: Word Problems', tag:'word', difficulty:'easy', q:'Ali earns $1 800 a month. He saves 25% and spends the rest. How much does he spend?', opts:['$450','$900','$1 350','$1 600'], ans:2, hint:'Spends = 100% − 25% = 75% of $1800', exp:'75% × $1800 = 0.75 × 1800 = <strong>$1 350</strong>' },
+    { id:'m12', section:'Section C: Word Problems', tag:'word', difficulty:'easy', q:'A car travels at 80 km/h. How far does it travel in 2 hours 30 minutes?', opts:['160 km','180 km','200 km','220 km'], ans:2, hint:'Distance = Speed × Time. Convert 2h 30min to hours first.', exp:'2.5 hours × 80 km/h = <strong>200 km</strong>' },
+    // ── Medium / Quiz-only ──
+    { id:'m13', section:'Section A: MCQ', tag:'mcq', difficulty:'medium', pool:'quiz', q:'The LCM of 12 and 18 is:', opts:['6','36','72','216'], ans:1, hint:'LCM is the smallest number divisible by BOTH. 12=2²×3, 18=2×3²', exp:'LCM = 2² × 3² = 4 × 9 = <strong>36</strong>' },
+    { id:'m14', section:'Section A: MCQ', tag:'mcq', difficulty:'medium', pool:'quiz', q:'If 30% of a number is 45, what is the number?', opts:['13.5','135','150','300'], ans:2, hint:'30% = 45, so 1% = 45÷30. Then 100% = ?', exp:'1% = 1.5. 100% = 1.5 × 100 = <strong>150</strong>' },
+    { id:'m15', section:'Section B: Short Answer', tag:'short', difficulty:'medium', pool:'quiz', q:'Shop A sells a laptop for $1200 at 20% discount. Shop B sells the same laptop for $850. How much cheaper is Shop B?', opts:['$110','$120','$350','$310'], ans:0, hint:'Find Shop A\'s discounted price first: $1200 × 80%', exp:'Shop A: $1200 × 80% = $960. Difference = $960 − $850 = <strong>$110</strong>' },
+    { id:'m16', section:'Section B: Short Answer', tag:'short', difficulty:'medium', pool:'quiz', q:'A cuboid fish tank is 50 cm long, 30 cm wide, 40 cm deep. Water fills 3/4 of it. Find the volume of water in litres. (1 litre = 1000 cm³)', opts:['45 litres','60 litres','18 litres','180 litres'], ans:0, hint:'Volume of tank = L×W×H. Then take 3/4 of it. Convert cm³ to litres.', exp:'Tank = 50×30×40 = 60000 cm³. Water = 3/4 × 60000 = 45000 cm³ = <strong>45 litres</strong>' },
+    { id:'m17', section:'Section C: Word Problems', tag:'word', difficulty:'medium', pool:'quiz', q:'Ali and Ben share money in ratio 3:7. Ben gives $60 to Ali. They now have equal amounts. How much did Ali have at first?', opts:['$90','$120','$150','$210'], ans:0, hint:'After transfer they\'re equal. Work backwards from the transfer.', exp:'Let Ali=3u, Ben=7u. After transfer: 3u+60 = 7u−60 → 120=4u → u=30. Ali = 3×30 = <strong>$90</strong>' },
+    { id:'m18', section:'Section C: Word Problems', tag:'word', difficulty:'medium', pool:'quiz', q:'Train A leaves at 7am at 60 km/h. Train B leaves at 8am at 90 km/h in the same direction. At what time does Train B catch Train A?', opts:['9am','10am','11am','12pm'], ans:1, hint:'By 8am, Train A is 60km ahead. Closing speed = 90−60 = 30 km/h', exp:'Gap = 60km. Time to close = 60÷30 = 2h. 8am + 2h = <strong>10am</strong>' },
+    { id:'m19', section:'Section A: MCQ', tag:'mcq', difficulty:'medium', pool:'quiz', q:'The volume of a cylinder is 1540 cm³ and its height is 10 cm. Find its radius. (π = 22/7)', opts:['7 cm','14 cm','49 cm','3.5 cm'], ans:0, hint:'V = π r² h. Rearrange: r² = V ÷ (πh)', exp:'r² = 1540 ÷ (22/7 × 10) = 1540 ÷ (220/7) = 1540 × 7/220 = 49. r = <strong>7 cm</strong>' },
+    // ── Hard / Quiz-only ──
+    { id:'m20', section:'Section C: Word Problems', tag:'word', difficulty:'hard', pool:'quiz', q:'A 20% salt solution contains 80g of salt. Water is added until the solution is 16% salt. How much water was added?', opts:['50 g','80 g','100 g','200 g'], ans:0, hint:'Total original solution = 80÷20% = 400g. New total = 80÷16% = 500g. Water added = ?', exp:'Original = 80÷0.2 = 400g. New total = 80÷0.16 = 500g. Water added = 500−400 = <strong>50g</strong>' },
+    { id:'m21', section:'Section C: Word Problems', tag:'word', difficulty:'hard', pool:'quiz', q:'Ali cycled from Town A to Town B at 12 km/h, then returned at 8 km/h. What was his average speed for the whole journey?', opts:['9.6 km/h','10 km/h','10.5 km/h','20 km/h'], ans:0, hint:'Average speed = Total distance ÷ Total time. Let distance = d each way.', exp:'Time A→B = d/12, B→A = d/8. Total time = d/12+d/8 = 5d/24. Avg = 2d÷(5d/24) = 48/5 = <strong>9.6 km/h</strong>' },
+    { id:'m22', section:'Section B: Short Answer', tag:'short', difficulty:'hard', pool:'quiz', q:'A rectangular field is 3 times as long as it is wide. If its perimeter is 96 m, find its area.', opts:['432 m²','324 m²','512 m²','648 m²'], ans:0, hint:'Let width = w, length = 3w. Form equation using perimeter = 96.', exp:'2(w + 3w) = 96 → 8w = 96 → w = 12, L = 36. Area = 36 × 12 = <strong>432 m²</strong>' },
+    { id:'m23', section:'Section C: Word Problems', tag:'word', difficulty:'hard', pool:'quiz', q:'3 men can build a wall in 8 days. How many days will it take 4 men (working at the same rate) to build 2 such walls?', opts:['12 days','6 days','16 days','8 days'], ans:0, hint:'Find total man-days for 1 wall first. Then for 2 walls with 4 men.', exp:'1 wall = 3×8 = 24 man-days. 2 walls = 48 man-days. With 4 men: 48÷4 = <strong>12 days</strong>' },
+  ],
+
+  science: [
+    // ── Diversity (easy, drill) ──
+    { id:'s01', section:'Diversity', tag:'diversity', difficulty:'easy', q:'Which characteristic is NOT shared by all living things?', opts:['Growth','Movement','Reproduction','Rusting'], ans:3, hint:'Rusting is a chemical reaction — is it a life process?', exp:'<strong>Rusting</strong> is not a life process. All living things grow, move (in some way), and reproduce.' },
+    { id:'s02', section:'Diversity', tag:'diversity', difficulty:'easy', q:'Which adaptation helps a polar bear survive in the Arctic?', opts:['Thin skin','White camouflage fur and thick blubber','Long legs','Bright colours'], ans:1, hint:'Polar bears need warmth AND to blend in with snow', exp:'<strong>White fur for camouflage + thick blubber for insulation</strong> — two adaptations for cold, snowy conditions' },
+    // ── Cycles (easy, drill) ──
+    { id:'s03', section:'Cycles', tag:'cycles', difficulty:'easy', q:'In the water cycle, water vapour from plants enters the atmosphere through:', opts:['Evaporation','Precipitation','Transpiration','Condensation'], ans:2, hint:'This process is specific to plants releasing water through their leaves', exp:'<strong>Transpiration</strong> — plants release water vapour through stomata (tiny pores) in their leaves' },
+    { id:'s04', section:'Cycles', tag:'cycles', difficulty:'easy', q:'During condensation in the water cycle, water:', opts:['Evaporates from the sea','Changes from vapour to liquid droplets','Falls as rain','Soaks into the ground'], ans:1, hint:'Think about a cold glass "sweating" on a hot day', exp:'<strong>Condensation</strong>: water vapour cools and changes back into liquid water droplets (forming clouds)' },
+    // ── Systems (easy, drill) ──
+    { id:'s05', section:'Systems', tag:'systems', difficulty:'easy', q:'Which blood vessels carry oxygenated blood AWAY from the heart?', opts:['Veins','Capillaries','Arteries','Lymph vessels'], ans:2, hint:'A = Away from heart (arteries). Think of the first letter.', exp:'<strong>Arteries</strong> carry oxygenated blood away from the heart; veins bring blood back to the heart' },
+    { id:'s06', section:'Systems', tag:'systems', difficulty:'easy', q:'Where does most digestion and nutrient absorption occur?', opts:['Stomach','Liver','Large intestine','Small intestine'], ans:3, hint:'This organ has villi to increase surface area for absorption', exp:'<strong>Small intestine</strong> — villi (tiny projections) maximise surface area for nutrient absorption into bloodstream' },
+    // ── Interactions (easy, drill) ──
+    { id:'s07', section:'Interactions', tag:'interactions', difficulty:'easy', q:'What type of relationship is shown when a tick feeds on a dog\'s blood?', opts:['Mutualism','Commensalism','Parasitism','Predation'], ans:2, hint:'One organism benefits; the other is HARMED', exp:'<strong>Parasitism</strong> — tick (parasite) benefits; dog (host) is harmed' },
+    { id:'s08', section:'Interactions', tag:'interactions', difficulty:'easy', q:'In a food chain: Grass → Grasshopper → Frog → Snake → Eagle. The grasshopper is a:', opts:['Producer','Primary consumer','Secondary consumer','Decomposer'], ans:1, hint:'Consumers are numbered by what they eat: first to eat the producer = ?', exp:'<strong>Primary consumer</strong> — the grasshopper eats the producer (grass) directly' },
+    // ── Energy (easy, drill) ──
+    { id:'s09', section:'Energy', tag:'energy', difficulty:'easy', q:'When you rub your hands together, what energy conversion occurs?', opts:['Chemical → Kinetic','Kinetic → Heat','Light → Heat','Potential → Kinetic'], ans:1, hint:'Moving hands = kinetic. They get warm = ?', exp:'<strong>Kinetic → Heat</strong> — friction from rubbing converts movement energy into heat energy' },
+    { id:'s10', section:'Energy', tag:'energy', difficulty:'easy', q:'A ball at the top of a ramp has maximum:', opts:['Kinetic energy','Heat energy','Gravitational potential energy','Chemical energy'], ans:2, hint:'Energy stored due to HEIGHT/position', exp:'<strong>Gravitational potential energy</strong> — energy stored due to height. As it rolls down, this converts to kinetic energy.' },
+    // ── Medium / Quiz-only ──
+    { id:'s11', section:'Systems', tag:'systems', difficulty:'medium', pool:'quiz', q:'A student covers a plant\'s leaves with petroleum jelly for 3 days, then tests a leaf for starch. Result is negative. What does this show?', opts:['Plants need water to make starch','Light cannot reach the leaves','Stomata are blocked, preventing gas exchange needed for photosynthesis','The plant was unhealthy'], ans:2, hint:'Petroleum jelly blocks the stomata. What do stomata allow in?', exp:'Stomata allow CO₂ in. Blocked stomata → no CO₂ → <strong>photosynthesis cannot occur</strong> → no starch produced' },
+    { id:'s12', section:'Interactions', tag:'interactions', difficulty:'medium', pool:'quiz', q:'If all the frogs in an ecosystem are removed, what would most likely happen?', opts:['Grasshopper population decreases; snake population increases','Grasshopper population increases; snake population decreases','Nothing changes','All animals die'], ans:1, hint:'Think about what frogs eat and what eats frogs', exp:'No frogs → <strong>grasshoppers increase</strong> (no predator); <strong>snakes decrease</strong> (lose food source)' },
+    { id:'s13', section:'Energy', tag:'energy', difficulty:'medium', pool:'quiz', q:'Which of the following is a non-renewable energy source?', opts:['Solar','Wind','Coal','Hydroelectric'], ans:2, hint:'Non-renewable = cannot be replenished within a human lifetime', exp:'<strong>Coal</strong> is a fossil fuel — it takes millions of years to form, so it is non-renewable' },
+    { id:'s14', section:'Diversity', tag:'diversity', difficulty:'medium', pool:'quiz', q:'A fish has streamlined body, gills, and fins. Which function do gills serve?', opts:['Help the fish swim faster','Extract oxygen from water','Provide camouflage','Store energy'], ans:1, hint:'Gills are respiratory organs in fish', exp:'<strong>Gills extract dissolved oxygen from water</strong> — the equivalent of lungs for aquatic animals' },
+    { id:'s15', section:'Cycles', tag:'cycles', difficulty:'medium', pool:'quiz', q:'During the carbon cycle, which process releases CO₂ into the atmosphere?', opts:['Photosynthesis','Respiration and combustion','Condensation','Nitrogen fixation'], ans:1, hint:'Which processes break down carbon compounds and release CO₂?', exp:'<strong>Respiration</strong> (in all living things) and <strong>combustion</strong> (burning) both release CO₂ into the atmosphere' },
+    { id:'s16', section:'Systems', tag:'systems', difficulty:'medium', pool:'quiz', q:'What is the role of valves in the heart?', opts:['Pump blood to the body','Ensure blood flows in one direction','Exchange gases','Produce blood cells'], ans:1, hint:'Valves are like one-way doors', exp:'<strong>Valves ensure blood flows in one direction</strong> — preventing backflow between chambers and into vessels' },
+    { id:'s17', section:'Energy', tag:'energy', difficulty:'medium', pool:'quiz', q:'A solar panel converts light energy into electrical energy. This is an example of:', opts:['Energy creation','Energy conservation','Energy conversion','Energy storage'], ans:2, hint:'Energy changing from one form to another = ?', exp:'<strong>Energy conversion</strong> — energy changes form (light → electrical) but is not created or destroyed' },
+    { id:'s18', section:'Interactions', tag:'interactions', difficulty:'medium', pool:'quiz', q:'What is the role of decomposers in an ecosystem?', opts:['Produce food by photosynthesis','Break down dead matter and return nutrients to soil','Hunt and eat other animals','Compete with producers for sunlight'], ans:1, hint:'Fungi and bacteria are examples of decomposers', exp:'<strong>Decomposers</strong> break down dead organisms and waste, returning nutrients to the soil for producers to use' },
+    // ── Hard / Quiz-only ──
+    { id:'s19', section:'Systems', tag:'systems', difficulty:'hard', pool:'quiz', q:'Experiment: Plant A in light with open stomata; Plant B in dark with blocked stomata. Both tested for starch after 3 days. What is the independent variable?', opts:['Presence of starch','Amount of water given','Light and stomata condition','Type of plant'], ans:2, hint:'The independent variable is what the scientist deliberately CHANGES', exp:'The <strong>light and stomata condition</strong> is what is being changed/manipulated — it is the independent variable' },
+    { id:'s20', section:'Energy', tag:'energy', difficulty:'hard', pool:'quiz', q:'Which statement about energy is correct?', opts:['Energy can be created from nothing','Energy is destroyed when converted','Total energy before and after conversion remains constant','Nuclear energy is a renewable resource'], ans:2, hint:'Law of Conservation of Energy', exp:'<strong>Law of Conservation of Energy</strong>: energy cannot be created or destroyed, only converted from one form to another' },
+    { id:'s21', section:'Interactions', tag:'interactions', difficulty:'hard', pool:'quiz', q:'A scientist adds fertiliser to a lake. Algae multiply rapidly, blocking sunlight. Fish die. What is this process called, and what is the PRIMARY cause of fish death?', opts:['Photosynthesis; too much light','Eutrophication; lack of oxygen as bacteria decomposing dead algae use it up','Predation; algae eating fish','Osmosis; too much salt'], ans:1, hint:'When algae die, bacteria decompose them. What do bacteria need to respire?', exp:'<strong>Eutrophication</strong>: algae bloom → algae die → bacteria decompose dead algae → bacteria use up oxygen → fish suffocate' },
+    { id:'s22', section:'Diversity', tag:'diversity', difficulty:'hard', pool:'quiz', q:'A mammal gives birth to live young, breathes air, but spends its entire life in water. Which of these is it MOST likely adapted for?', opts:['Running fast on land','Extracting oxygen from water using gills','Swimming efficiently and conserving body heat in cold water','Climbing trees'], ans:2, hint:'Think of a whale or dolphin — what adaptations help them survive in cold oceans?', exp:'<strong>Streamlined body for swimming + thick blubber for insulation</strong> — adaptations for an aquatic mammal in cold water' },
+  ],
+
+  malay: [
+    // ── Tatabahasa (easy, drill) ──
+    { id:'b01', section:'Tatabahasa', tag:'tatabahasa', difficulty:'easy', q:'Tukarkan kepada ayat pasif: "Ali memukul bola itu."', opts:['Bola itu dipukul oleh Ali.','Bola itu memukul Ali.','Ali dipukul bola itu.','Dipukul bola itu oleh Ali.'], ans:0, hint:'Ayat pasif: Objek + kata kerja pasif (di-) + oleh + subjek', exp:'<strong>Bola itu dipukul oleh Ali.</strong> — objek jadi subjek, kata kerja "di-" ditambah' },
+    { id:'b02', section:'Tatabahasa', tag:'tatabahasa', difficulty:'easy', q:'Pilih kata sendi nama yang betul: "Buku itu ___ atas meja."', opts:['ke','di','dari','pada'], ans:1, hint:'Untuk menyatakan lokasi/tempat sesuatu benda', exp:'"<strong>di</strong>" digunakan untuk menyatakan kedudukan atau lokasi sesuatu benda' },
+    { id:'b03', section:'Tatabahasa', tag:'tatabahasa', difficulty:'easy', q:'Apakah jenis ayat ini? "Tolong tutup tingkap itu!"', opts:['Ayat penyata','Ayat tanya','Ayat perintah','Ayat seruan'], ans:2, hint:'Ayat yang mengeluarkan arahan atau permintaan', exp:'<strong>Ayat perintah</strong> — mengeluarkan arahan atau permintaan kepada seseorang' },
+    { id:'b04', section:'Tatabahasa', tag:'tatabahasa', difficulty:'easy', q:'Imbuhan yang betul untuk menjadikan "tulis" kata nama (hasil tulisan):', opts:['me-tulis','tulis-an','ber-tulis','di-tulis'], ans:1, hint:'Akhiran -an sering menghasilkan kata nama', exp:'"tulis" + akhiran <strong>-an</strong> = <strong>tulisan</strong> (kata nama)' },
+    // ── Kosa Kata (easy, drill) ──
+    { id:'b05', section:'Kosa Kata', tag:'kosa-kata', difficulty:'easy', q:'Apakah sinonim bagi "gembira"?', opts:['Sedih','Suka cita','Marah','Takut'], ans:1, hint:'Kata lain yang membawa maksud yang sama dengan "gembira"', exp:'"<strong>Suka cita</strong>" ialah sinonim bagi "gembira" (joyful/happy)' },
+    { id:'b06', section:'Kosa Kata', tag:'kosa-kata', difficulty:'easy', q:'Apakah antonim bagi "murah"?', opts:['Baru','Mahal','Cantik','Lama'], ans:1, hint:'Jika tidak murah, barang itu...', exp:'Kata berlawanan "murah" ialah <strong>mahal</strong>' },
+    { id:'b07', section:'Kosa Kata', tag:'kosa-kata', difficulty:'easy', q:'Apakah maksud peribahasa "Seperti katak di bawah tempurung"?', opts:['Pandai bersembunyi','Berpandangan sempit dan kurang pengalaman','Suka duduk di rumah','Sangat bijak'], ans:1, hint:'Katak di bawah tempurung — apa yang dapat dilihat?', exp:'"<strong>Seperti katak di bawah tempurung</strong>" — seseorang yang berpandangan sempit dan tidak berpengalaman luas' },
+    // ── Kefahaman (easy, drill) ──
+    { id:'b08', section:'Kefahaman', tag:'kefahaman', difficulty:'easy', passage:'Hari ini, Farhan membantu ibunya memasak untuk majlis kenduri. Dia memotong sayur dengan cermat. "Kerja keras itu indah," kata ibunya sambil tersenyum lebar.', q:'Mengapa ibu Farhan tersenyum lebar?', opts:['Makanan itu sedap','Farhan membantu dan bekerja keras','Majlis sudah tamat','Farhan menonton TV'], ans:1, hint:'Cari ayat yang berkaitan dengan ibu tersenyum', exp:'Ibu tersenyum kerana <strong>Farhan membantu dengan tekun</strong> — mencerminkan nilai murni bergotong-royong' },
+    { id:'b09', section:'Kefahaman', tag:'kefahaman', difficulty:'easy', passage:'Hari ini, Farhan membantu ibunya memasak untuk majlis kenduri. Dia memotong sayur dengan cermat. "Kerja keras itu indah," kata ibunya sambil tersenyum lebar.', q:'Apakah maksud "kerja keras itu indah"?', opts:['Bekerja membuat badan cantik','Usaha dan rajin adalah sesuatu yang bernilai','Masakan yang sedap adalah cantik','Majlis itu cantik'], ans:1, hint:'Maksud tersirat di sebalik kata-kata ibu', exp:'Maksud tersirat: <strong>bekerja keras adalah sesuatu yang bernilai dan membanggakan</strong>' },
+    // ── Karangan (easy, drill) ──
+    { id:'b10', section:'Karangan', tag:'karangan', difficulty:'easy', q:'Apakah yang perlu ada dalam perenggan PERTAMA sebuah karangan?', opts:['Kesimpulan','Pengenalan kepada topik','Hujah-hujah sahaja','Penutup yang kuat'], ans:1, hint:'Perenggan pertama memperkenalkan pembaca kepada topik', exp:'Perenggan pertama mengandungi <strong>pengenalan kepada topik</strong> yang akan dibincangkan' },
+    // ── Medium / Quiz-only ──
+    { id:'b11', section:'Tatabahasa', tag:'tatabahasa', difficulty:'medium', pool:'quiz', q:'Apakah fungsi kata hubung "walaupun" dalam ayat?', opts:['Menunjukkan sebab','Menunjukkan akibat','Menunjukkan pertentangan','Menunjukkan urutan'], ans:2, hint:'"Walaupun" menghubungkan dua idea yang bertentangan', exp:'"<strong>Walaupun</strong>" menunjukkan pertentangan — sesuatu berlaku walaupun ada halangan atau rintangan' },
+    { id:'b12', section:'Tatabahasa', tag:'tatabahasa', difficulty:'medium', pool:'quiz', q:'Pilih ayat yang menggunakan imbuhan dengan betul:', opts:['Dia me-makan nasi.','Dia memakan nasi.','Dia dimakan nasi.','Dia ter-makan nasi.'], ans:1, hint:'Kata kerja aktif: me- + kata dasar (tanpa tanda sempang)', exp:'"<strong>Dia memakan nasi.</strong>" — imbuhan "me-" ditulis bersambung, bukan dipisahkan dengan tanda sempang' },
+    { id:'b13', section:'Kosa Kata', tag:'kosa-kata', difficulty:'medium', pool:'quiz', q:'Apakah maksud peribahasa "Bersatu teguh, bercerai roboh"?', opts:['Perpaduan membawa kekuatan; perpecahan membawa kelemahan','Bercerai adalah perkara biasa','Kita perlu bergaduh untuk bersatu','Semua orang perlu berpisah'], ans:0, hint:'Apabila bersama kita kuat; apabila berpecah kita lemah', exp:'"<strong>Bersatu teguh, bercerai roboh</strong>" — perpaduan memberi kekuatan; perpecahan membawa kehancuran' },
+    { id:'b14', section:'Kosa Kata', tag:'kosa-kata', difficulty:'medium', pool:'quiz', q:'Pilih perkataan yang paling sesuai: "Dia bercakap dengan suara yang ___ supaya tidak mengganggu orang lain."', opts:['lantang','kuat','perlahan','garau'], ans:2, hint:'Suara yang tidak mengganggu orang lain haruslah...', exp:'"<strong>Perlahan</strong>" — bercakap dengan suara perlahan supaya tidak mengganggu ketenteraman' },
+    { id:'b15', section:'Kefahaman', tag:'kefahaman', difficulty:'medium', pool:'quiz', passage:'Hari ini, Farhan membantu ibunya memasak untuk majlis kenduri. Dia memotong sayur dengan cermat. "Kerja keras itu indah," kata ibunya sambil tersenyum lebar.', q:'Apakah perbezaan antara "fakta" dan "pendapat" dalam petikan?', opts:['Tiada perbezaan','Fakta boleh dibuktikan; pendapat ialah pandangan peribadi','Pendapat boleh dibuktikan; fakta ialah andaian','Fakta hanya daripada buku'], ans:1, hint:'Fakta = boleh disahkan. Pendapat = pandangan seseorang.', exp:'<strong>Fakta</strong> ialah maklumat yang boleh dibuktikan; <strong>pendapat</strong> ialah pandangan peribadi yang mungkin berbeza antara orang' },
+    { id:'b16', section:'Tatabahasa', tag:'tatabahasa', difficulty:'medium', pool:'quiz', q:'Pilih kata hubung yang betul: "Dia tidak hadir ke sekolah ___ dia sakit."', opts:['dan','atau','kerana','tetapi'], ans:2, hint:'Kata hubung yang menunjukkan sebab/alasan', exp:'"<strong>Kerana</strong>" ialah kata hubung sebab yang menjelaskan alasan tidak hadir' },
+    { id:'b17', section:'Karangan', tag:'karangan', difficulty:'medium', pool:'quiz', q:'Dalam karangan perbincangan, apakah yang perlu ada dalam perenggan ISI?', opts:['Salam pembuka','Hujah yang disokong dengan contoh dan penerangan','Kesimpulan sahaja','Soalan retorik sahaja'], ans:1, hint:'Perenggan isi = hujah + sokongan/contoh', exp:'Perenggan isi perlu mengandungi <strong>hujah yang jelas, disokong dengan contoh atau penerangan</strong> yang relevan' },
+    { id:'b18', section:'Kosa Kata', tag:'kosa-kata', difficulty:'medium', pool:'quiz', q:'Apakah maksud "bertekun" dalam konteks pembelajaran?', opts:['Bermalas-malasan','Belajar dengan bersungguh-sungguh dan tidak berputus asa','Tidur cukup sebelum peperiksaan','Bergantung kepada orang lain'], ans:1, hint:'Pelajar yang bertekun tidak menyerah walaupun sukar', exp:'"<strong>Bertekun</strong>" bermaksud melakukan sesuatu dengan penuh usaha dan tidak berputus asa walaupun menghadapi kesukaran' },
+    // ── Hard / Quiz-only ──
+    { id:'b19', section:'Tatabahasa', tag:'tatabahasa', difficulty:'hard', pool:'quiz', q:'Apakah struktur ayat majmuk yang betul menggunakan "walaupun"?', opts:['Walaupun dia penat, dia masih belajar dengan bersungguh-sungguh.','Walaupun dia belajar, penat sangat.','Dia penat walaupun belajar masih.','Belajar walaupun dia penat masih.'], ans:0, hint:'"Walaupun" + keadaan, + tindakan/akibat', exp:'"<strong>Walaupun dia penat, dia masih belajar dengan bersungguh-sungguh.</strong>" — struktur betul ayat menggunakan "walaupun"' },
+    { id:'b20', section:'Kefahaman', tag:'kefahaman', difficulty:'hard', pool:'quiz', passage:'Hari ini, Farhan membantu ibunya memasak untuk majlis kenduri. Dia memotong sayur dengan cermat. "Kerja keras itu indah," kata ibunya sambil tersenyum lebar.', q:'Apakah nilai murni yang terdapat dalam petikan ini?', opts:['Kesombongan','Tolong-menolong dan rajin berusaha','Dengki dan iri hati','Suka bergaduh'], ans:1, hint:'Lihat tindakan Farhan terhadap ibunya', exp:'Nilai murni: <strong>tolong-menolong</strong> (Farhan membantu ibu) dan <strong>rajin berusaha</strong> (bekerja dengan cermat)' },
+    { id:'b21', section:'Kosa Kata', tag:'kosa-kata', difficulty:'hard', pool:'quiz', q:'Apakah maksud peribahasa "Seperti kera mendapat bunga"?', opts:['Hati yang senang','Mendapat sesuatu bernilai tetapi tidak tahu menghargainya','Rajin dan tekun','Suka berkawan dengan semua orang'], ans:1, hint:'Kera tidak memahami nilai bunga yang indah', exp:'"<strong>Seperti kera mendapat bunga</strong>" — mendapat sesuatu yang bernilai tetapi tidak tahu menghargainya' },
+    { id:'b22', section:'Karangan', tag:'karangan', difficulty:'hard', pool:'quiz', q:'Pilih ayat penutup karangan yang PALING berkesan:', opts:['Itulah cerita saya. Sekian terima kasih.','Jadi begitulah pendapat saya.','Kesimpulannya, semua pihak haruslah berganding bahu memupuk semangat perpaduan demi menjamin kemakmuran negara kita.','Saya harap pembaca faham tentang topik ini.'], ans:2, hint:'Penutup yang berkesan merumuskan isi dan memberi impak kepada pembaca', exp:'Pilihan C adalah paling berkesan — <strong>merumuskan isi, menggunakan bahasa matang</strong> dan memberi impak yang kuat' },
+  ],
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+const CFG = {
+  english: { label:'English',     emoji:'📖', hdr:'#1d4ed8', sky:'#93c5fd', bg:'#eff6ff', btn:'bg-blue-600 hover:bg-blue-700' },
+  math:    { label:'Mathematics', emoji:'🔢', hdr:'#0d9488', sky:'#5eead4', bg:'#f0fdf4', btn:'bg-teal-600 hover:bg-teal-700' },
+  science: { label:'Science',     emoji:'🔬', hdr:'#7c3aed', sky:'#c4b5fd', bg:'#f5f3ff', btn:'bg-violet-600 hover:bg-violet-700' },
+  malay:   { label:'Bahasa Melayu', emoji:'🌙', hdr:'#c2410c', sky:'#fdba74', bg:'#fff7ed', btn:'bg-orange-600 hover:bg-orange-700' },
+};
+const PARENT_PIN = '1234';
+const AF_PREFIX = 'af1_';
+
+// ═══════════════════════════════════════════════════════════════
+// TEACH PANELS
+// ═══════════════════════════════════════════════════════════════
+const ENGLISH_TEACH = {
+  'Grammar': {
+    title:'Grammar', emoji:'📝', color:'#1d4ed8', bg:'#eff6ff',
+    tip:'💡 Identify the SUBJECT first — singular or plural? Then match the verb and tense to the time word.',
+    concepts:[
+      { icon:'🧑', label:'Subject-Verb Agreement', text:'Singular (he/she/it/each/neither) → singular verb. Plural (they/we/children) → plural verb. Collective nouns (team, class, committee) → singular.' },
+      { icon:'⏰', label:'Tenses', text:'Simple present: she goes. Past: she went. Present perfect: she has gone. Past perfect: she had gone. Future: she will go.' },
+      { icon:'🔄', label:'Passive Voice', text:'Active: Ali ate the cake. Passive: The cake was eaten by Ali. Formula: was/were + past participle.' },
+      { icon:'💭', label:'Conditionals & Subjunctive', text:'"If I were you" (not was) — hypothetical conditions use "were". "If he studies, he will pass" — real possibility uses "studies/will".' },
+    ],
+    example:{ q:'Neither the teacher nor the students ___ ready. (was/were)', steps:['Identify: Neither…nor → verb agrees with NEAREST subject','Nearest subject = "students" (plural)','Plural → were ✓'] }
+  },
+  'Vocabulary': {
+    title:'Vocabulary', emoji:'📚', color:'#1d4ed8', bg:'#eff6ff',
+    tip:'💡 If you don\'t know a word, look at the surrounding sentence for context clues.',
+    concepts:[
+      { icon:'↔️', label:'Synonyms & Antonyms', text:'Synonyms = same meaning (benevolent = kind). Antonyms = opposite (benevolent ↔ cruel). Look for prefixes: un-, dis-, in-.' },
+      { icon:'📖', label:'Context Clues', text:'Guess meaning from surrounding words: "She was famished and ate everything" → famished = very hungry.' },
+      { icon:'🌿', label:'Word Forms', text:'Verb → Noun: decide → decision. Verb → Adjective: impress → impressive. Noun → Adjective: anxiety → anxious.' },
+      { icon:'💬', label:'Idioms & Phrases', text:'"Burning midnight oil" = working late. "Hit the nail on the head" = exactly right. Context determines meaning, not individual words.' },
+    ],
+    example:{ q:'The crowd\'s response was ___ — nobody objected. (acquiescence/uproar)', steps:['Context clue: "nobody objected" = no disagreement','Acquiescence = passive agreement','Uproar = noisy protest — opposite of "nobody objected"','Answer: acquiescence ✓'] }
+  },
+  'Grammar Cloze': {
+    title:'Grammar Cloze', emoji:'✏️', color:'#1d4ed8', bg:'#eff6ff',
+    tip:'💡 Read the WHOLE passage before filling. Earlier sentences tell you the tense.',
+    concepts:[
+      { icon:'📖', label:'Read First', text:'Identify: Is the passage in past or present tense? Who is doing the action? Look for time words (yesterday, now, every day).' },
+      { icon:'🔢', label:'Articles', text:'a = before consonant sounds. an = before vowel sounds (a,e,i,o,u). the = specific/already mentioned thing.' },
+      { icon:'📏', label:'Countable vs Uncountable', text:'Countable: many cups, few people. Uncountable: much water, little sugar. Use "some" for both.' },
+      { icon:'⚖️', label:'Comparatives', text:'Comparing 2: -er / more. Comparing 3+: -est / most. Only 2 brothers → use "kinder" not "kindest".' },
+    ],
+    example:{ q:'He is the ___ of the two brothers. (kinder/kindest)', steps:['How many are being compared? TWO brothers','Two → comparative form (-er)','Answer: kinder ✓'] }
+  },
+  'Editing': {
+    title:'Editing', emoji:'🖊️', color:'#1d4ed8', bg:'#eff6ff',
+    tip:'💡 Read the full sentence aloud. Does something sound wrong? Check SVA, tense, and spelling.',
+    concepts:[
+      { icon:'👥', label:'Subject-Verb Agreement', text:'Each/every/either/neither → singular verb (has, is, was). The committee/class/team → has (not have).' },
+      { icon:'⏰', label:'Irregular Verbs', text:'go/went, teach/taught, lay/laid, lie/lay (recline). "She laid on the bed" ✗ → "She lay on the bed" ✓.' },
+      { icon:'📝', label:'Adjective vs Adverb', text:'Adjectives describe nouns (happy child). Adverbs describe verbs (ran happily). "He played good" ✗ → "He played well" ✓.' },
+      { icon:'🔡', label:'Common Misspellings', text:'Receive (not recieve). Achieve. Necessary (1 c, 2 s). Definitely. Separate.' },
+    ],
+    example:{ q:'Find error: "Each of the students have submitted their work."', steps:['Subject: "Each" → always singular','Singular subject → singular verb','"have" should be "has" ✓'] }
+  },
+  'Comprehension': {
+    title:'Comprehension', emoji:'📰', color:'#1d4ed8', bg:'#eff6ff',
+    tip:'💡 Read the passage TWICE. First for gist, second for specific answers.',
+    concepts:[
+      { icon:'🔍', label:'Literal vs Inferential', text:'Literal = stated directly in text. Inferential = implied — "what does this suggest?" Read beyond the surface.' },
+      { icon:'🎯', label:'Author\'s Purpose', text:'Why was this written? To inform, to persuade, to entertain, or to warn? Look at the overall message.' },
+      { icon:'💬', label:'Figurative Language', text:'Metaphor: direct comparison (the classroom was a zoo). Simile: uses "like" or "as". Personification: gives human qualities to non-human things.' },
+      { icon:'📝', label:'Answering Technique', text:'For "why" questions — use "because". For "how" questions — describe the method. For "what" — find the noun/phrase.' },
+    ],
+    example:{ q:'"The Amazon = lungs of the Earth." What literary device is this?', steps:['Is there "like" or "as"? No → not a simile','Direct comparison (Amazon IS called lungs) → Metaphor','Answer: Metaphor ✓'] }
+  },
+  'Synthesis': {
+    title:'Synthesis & Transformation', emoji:'🔗', color:'#1d4ed8', bg:'#eff6ff',
+    tip:'💡 The meaning must stay the SAME after transformation. Check both sentences say the same thing.',
+    concepts:[
+      { icon:'🔗', label:'Conjunctions', text:'Although/Despite/Even though = contrast. Because/Since/As = reason. So…that = result. Not only…but also = addition.' },
+      { icon:'🔄', label:'Transformations', text:'"She did not pass" → "She failed to pass". "He is tall enough" → "He is not too short to…". Active ↔ Passive.' },
+      { icon:'👤', label:'Relative Clauses', text:'Who/that = person doing something. Whose = possession. Which = thing. Add commas for non-defining (extra info) clauses.' },
+      { icon:'✅', label:'Check Your Answer', text:'After combining, verify: (1) grammar is correct, (2) meaning is unchanged, (3) punctuation is right.' },
+    ],
+    example:{ q:'Combine: "The scientist won the Nobel Prize. Her research changed medicine." Use relative clause.', steps:['Use "whose" for possession (her research = whose research)','Insert after "scientist": "whose research changed medicine"','Result: "The scientist, whose research changed medicine, won the Nobel Prize." ✓'] }
+  },
+};
+
+const MATH_TEACH = {
+  'Section A: MCQ': {
+    title:'Section A: Multiple Choice', emoji:'📝', color:'#0d9488', bg:'#f0fdf4',
+    tip:'💡 Read ALL 4 options before choosing. Even if A looks right — check B, C, D!',
+    concepts:[
+      { icon:'🔢', label:'Algebra', text:'Collect like terms: 3a + 5b − a + 2b = 2a + 7b. Solve equations by doing the same operation to BOTH sides.' },
+      { icon:'🔵', label:'Circles & Geometry', text:'Area of circle = πr². Circumference = 2πr. Use π = 22/7 when radius is a multiple of 7.' },
+      { icon:'📊', label:'Data & Mean', text:'Mean = Sum ÷ Count. To find a missing value: find total sum needed, then subtract known values.' },
+      { icon:'🔢', label:'Number Theory', text:'Prime numbers have exactly 2 factors. LCM = smallest number divisible by both. HCF = largest common factor.' },
+    ],
+    example:{ q:'The LCM of 12 and 18', steps:['12 = 2² × 3, 18 = 2 × 3²','LCM takes highest power of each prime','LCM = 2² × 3² = 4 × 9 = 36 ✓'] }
+  },
+  'Section B: Short Answer': {
+    title:'Section B: Short Answer', emoji:'✏️', color:'#0d9488', bg:'#f0fdf4',
+    tip:'💡 Show your working clearly. Check units — area in cm², length in cm.',
+    concepts:[
+      { icon:'📐', label:'Area & Perimeter', text:'Rectangle: Area = L×W, Perimeter = 2(L+W). Circle: Area = πr². Composite shapes: break into simpler shapes.' },
+      { icon:'💧', label:'Volume', text:'Cuboid: L×W×H. Cylinder: πr²h. 1 litre = 1000 cm³. Fraction of tank = fraction × total volume.' },
+      { icon:'📏', label:'Algebra Equations', text:'4x − 7 = 17 → 4x = 24 → x = 6. Always check by substituting back.' },
+      { icon:'🕐', label:'Time & Fraction', text:'Convert time to same unit before calculating. 45 min as fraction of 3 hours = 45/180 = 1/4.' },
+    ],
+    example:{ q:'Rectangle 12cm × 7cm with area 84cm². Perimeter?', steps:['P = 2(L+W) = 2(12+7)','= 2 × 19 = 38 cm ✓'] }
+  },
+  'Section C: Word Problems': {
+    title:'Section C: Word Problems', emoji:'📖', color:'#0d9488', bg:'#f0fdf4',
+    tip:'💡 Read TWICE. Draw a model. Break into steps. Sanity-check your answer.',
+    concepts:[
+      { icon:'📋', label:'Step by Step', text:'Never rush. Step 1: what do I know? Step 2: what is asked? Step 3: what method? Step 4: calculate. Step 5: check.' },
+      { icon:'⚡', label:'Rate Problems', text:'Speed = Distance ÷ Time. Distance = Speed × Time. Time = Distance ÷ Speed. For average speed: total distance ÷ total time.' },
+      { icon:'⚖️', label:'Ratio & Percentage', text:'Ratio 3:5 → 3 parts and 5 parts. % problems: if 30% = 45, then 1% = 1.5, 100% = 150.' },
+      { icon:'💧', label:'Mixture Problems', text:'If concentration changes, the amount of pure substance stays the same. Use: amount = concentration × total.' },
+    ],
+    example:{ q:'Ali and Ben share $x in ratio 3:7. Ben gives $60 to Ali. Now equal. Find Ali\'s original share.', steps:['Let Ali=3u, Ben=7u','After transfer: 3u+60 = 7u−60','120 = 4u → u = 30','Ali = 3 × 30 = $90 ✓'] }
+  },
+};
+
+const SCIENCE_TEACH = {
+  'Diversity': {
+    title:'Diversity of Living Things', emoji:'🌿', color:'#7c3aed', bg:'#f5f3ff',
+    tip:'💡 For adaptation questions — always link the feature to its FUNCTION and the organism\'s environment.',
+    concepts:[
+      { icon:'🔬', label:'Characteristics of Living Things', text:'All living things: Move, Respire, Sensitive, Grow, Reproduce, Excrete, Need nutrition (MRSGREN). Rusting is NOT a life process.' },
+      { icon:'🐧', label:'Adaptations', text:'Structural: thick fur/blubber for cold. Behavioural: migration. Physiological: hibernation. Link adaptation → function → environment.' },
+      { icon:'🌱', label:'Classification', text:'Plants: make own food (autotrophs). Animals: consume others (heterotrophs). Fungi: decompose dead matter.' },
+      { icon:'🐟', label:'Fish Adaptations', text:'Streamlined body → reduce water resistance. Gills → extract dissolved O₂ from water. Fins → steering and propulsion.' },
+    ],
+    example:{ q:'Why do polar bears have thick white fur?', steps:['Thick fur → insulation → conserves body heat in Arctic cold','White colour → camouflage → blends with snow to hunt prey','Both are structural adaptations ✓'] }
+  },
+  'Cycles': {
+    title:'Cycles', emoji:'🔄', color:'#7c3aed', bg:'#f5f3ff',
+    tip:'💡 For cycle questions — know the NAME of each process (evaporation ≠ transpiration).',
+    concepts:[
+      { icon:'💧', label:'Water Cycle Processes', text:'Evaporation (water→vapour from sea/land). Transpiration (water→vapour from plants). Condensation (vapour→droplets = clouds). Precipitation (rain/snow).' },
+      { icon:'🌿', label:'Carbon Cycle', text:'CO₂ removed from air: photosynthesis. CO₂ added to air: respiration, combustion, decomposition.' },
+      { icon:'♻️', label:'Life Cycles', text:'Complete metamorphosis: egg→larva→pupa→adult (butterfly). Incomplete: egg→nymph→adult (grasshopper).' },
+      { icon:'🔬', label:'Nitrogen Cycle', text:'Nitrogen fixation → plants absorb → animals eat plants → decomposers return N to soil → denitrification.' },
+    ],
+    example:{ q:'How does water from plants enter the atmosphere?', steps:['Plants release water vapour through stomata (tiny pores in leaves)','This process is called TRANSPIRATION','(Not evaporation — that\'s from water surfaces, not plants) ✓'] }
+  },
+  'Systems': {
+    title:'Systems', emoji:'🫀', color:'#7c3aed', bg:'#f5f3ff',
+    tip:'💡 For experiments — identify: independent variable (what you change), dependent variable (what you measure), controlled variables (what stays the same).',
+    concepts:[
+      { icon:'🫀', label:'Circulatory System', text:'Heart pumps blood. Arteries: away from heart (oxygenated). Veins: to heart (deoxygenated). Valves: ensure one-way flow. Capillaries: exchange nutrients.' },
+      { icon:'🫁', label:'Respiratory System', text:'Breathing in: O₂ enters lungs → blood. Breathing out: CO₂ exits. Lungs = gas exchange. Diaphragm contracts → chest expands → air in.' },
+      { icon:'🍎', label:'Digestive System', text:'Mouth (chew) → Oesophagus → Stomach (acid, churn) → Small intestine (digest + absorb nutrients) → Large intestine (absorb water) → Excretion.' },
+      { icon:'🧪', label:'Fair Test', text:'Independent variable: what you deliberately change. Dependent variable: what you measure. Controlled variables: everything else stays the same.' },
+    ],
+    example:{ q:'Plant A in light; Plant B in dark. Test for starch. What is the independent variable?', steps:['Independent variable = what the scientist CHANGES','The scientist changed: light condition','Answer: light condition (presence/absence of light) ✓'] }
+  },
+  'Interactions': {
+    title:'Interactions', emoji:'🌐', color:'#7c3aed', bg:'#f5f3ff',
+    tip:'💡 For population questions — trace through the food chain step by step.',
+    concepts:[
+      { icon:'🦁', label:'Types of Relationships', text:'Predation: predator kills prey. Parasitism: parasite harms host (+/−). Mutualism: both benefit (+/+). Commensalism: one benefits, other unaffected (+/0).' },
+      { icon:'🌿', label:'Food Chains & Webs', text:'Producer → Primary consumer → Secondary consumer → Tertiary consumer → Decomposer. Energy is LOST at each level (only ~10% passed on).' },
+      { icon:'⚖️', label:'Population Changes', text:'Remove predator → prey increases. Remove prey → predator decreases. Adding nutrients → algae bloom → eutrophication.' },
+      { icon:'♻️', label:'Decomposers', text:'Bacteria and fungi break down dead organisms → return nutrients to soil → producers (plants) can absorb them again.' },
+    ],
+    example:{ q:'All frogs removed from: grass→grasshopper→frog→snake→eagle. What happens?', steps:['Frogs are removed (secondary consumer)','Grasshoppers (prey of frog): population INCREASES','Snakes (predator of frog): population DECREASES','Eagles: may decrease too (less snakes to eat) ✓'] }
+  },
+  'Energy': {
+    title:'Energy', emoji:'⚡', color:'#7c3aed', bg:'#f5f3ff',
+    tip:'💡 Energy is NEVER created or destroyed — only converted from one form to another (Law of Conservation of Energy).',
+    concepts:[
+      { icon:'⚡', label:'Types of Energy', text:'Kinetic (motion), Gravitational Potential (height), Chemical (food/battery/fuel), Heat, Light, Sound, Electrical.' },
+      { icon:'🔄', label:'Energy Conversion', text:'Solar panel: light→electrical. Rubbing hands: kinetic→heat. Ball falling: potential→kinetic. Bulb: electrical→light+heat.' },
+      { icon:'🌱', label:'Renewable vs Non-renewable', text:'Renewable: solar, wind, hydro, geothermal, biomass (replenish naturally). Non-renewable: coal, oil, natural gas (fossil fuels — take millions of years).' },
+      { icon:'📋', label:'Conservation of Energy', text:'Total energy BEFORE = Total energy AFTER any conversion. Energy is not lost — it changes form (some becomes unwanted heat).' },
+    ],
+    example:{ q:'What energy conversion occurs when you rub your hands?', steps:['Your hands are moving → kinetic energy','Friction converts kinetic to heat','Answer: Kinetic energy → Heat energy ✓'] }
+  },
+};
+
+const MALAY_TEACH = {
+  'Tatabahasa': {
+    title:'Tatabahasa', emoji:'📝', color:'#c2410c', bg:'#fff7ed',
+    tip:'💡 Baca ayat penuh sebelum menjawab. Perhatikan jenis kata dan fungsinya dalam ayat.',
+    concepts:[
+      { icon:'🔄', label:'Ayat Aktif & Pasif', text:'Aktif: Ali memukul bola. Pasif: Bola dipukul oleh Ali. Formula: Objek + di-(kata kerja) + oleh + Subjek.' },
+      { icon:'🔗', label:'Kata Hubung', text:'Kerana/sebab = sebab. Tetapi/namun = pertentangan. Walaupun/meskipun = walaupun ada halangan. Lalu/kemudian = urutan.' },
+      { icon:'📍', label:'Kata Sendi Nama', text:'"Di" = lokasi (di atas meja). "Ke" = arah/tujuan (ke sekolah). "Dari" = asal (dari Johor). "Pada" = masa/melekat (pada hari Isnin).' },
+      { icon:'➕', label:'Imbuhan', text:'me- = kata kerja aktif. di- = kata kerja pasif. ber- = melakukan sesuatu. -an = kata nama. -kan = menyebabkan.' },
+    ],
+    example:{ q:'Tukarkan: "Murid itu membaca buku." kepada ayat pasif.', steps:['Objek = buku (jadi subjek baru)','Kata kerja: membaca → dibaca','Tambah "oleh" + subjek asal','Jawapan: Buku dibaca oleh murid itu. ✓'] }
+  },
+  'Kosa Kata': {
+    title:'Kosa Kata', emoji:'📚', color:'#c2410c', bg:'#fff7ed',
+    tip:'💡 Fahami konteks ayat penuh sebelum memilih perkataan yang sesuai.',
+    concepts:[
+      { icon:'↔️', label:'Sinonim & Antonim', text:'Sinonim = seerti: gembira = suka cita. Antonim = berlawanan: murah ↔ mahal, rajin ↔ malas, berani ↔ pengecut.' },
+      { icon:'🌸', label:'Peribahasa', text:'"Seperti katak di bawah tempurung" = berpandangan sempit. "Bersatu teguh, bercerai roboh" = perpaduan memberi kekuatan. "Seperti kera mendapat bunga" = tak tahu menghargai.' },
+      { icon:'🔤', label:'Kata Majmuk', text:'Dua kata bergabung membentuk makna baru: kapal terbang, tandas awam, jalan raya. Ditulis terpisah, BUKAN dicantumkan.' },
+      { icon:'📖', label:'Konteks Ayat', text:'Jika tidak tahu makna perkataan, baca ayat penuh. Perkataan sekeliling memberi petunjuk tentang makna.' },
+    ],
+    example:{ q:'Apakah maksud "bertekun"?', steps:['Konteks: digunakan dalam situasi belajar/bekerja','"Bertekun" bermaksud berusaha bersungguh-sungguh','Tidak berputus asa walaupun menghadapi kesukaran','Jawapan: berusaha dengan bersungguh-sungguh ✓'] }
+  },
+  'Kefahaman': {
+    title:'Kefahaman', emoji:'📖', color:'#c2410c', bg:'#fff7ed',
+    tip:'💡 Baca petikan DUA kali. Pertama untuk memahami isi. Kedua untuk mencari jawapan.',
+    concepts:[
+      { icon:'🔍', label:'Cari Jawapan dalam Teks', text:'Kebanyakan jawapan ada dalam petikan. Cari kata kunci dalam soalan, kemudian cari dalam teks.' },
+      { icon:'💭', label:'Soalan Inferens', text:'Ada soalan yang memerlukan kita berfikir. "Apakah yang dapat kita simpulkan?" Gunakan maklumat teks + logik.' },
+      { icon:'🌸', label:'Nilai Murni', text:'Kenal pasti nilai murni: tolong-menolong, rajin, jujur, hormat-menghormati, berani, bertanggungjawab.' },
+      { icon:'📊', label:'Fakta vs Pendapat', text:'Fakta = boleh dibuktikan kebenarannya. Pendapat = pandangan peribadi seseorang. Perkataan seperti "saya rasa", "pada pendapat saya" = pendapat.' },
+    ],
+    example:{ q:'"Farhan memotong sayur dengan cermat." Apakah nilai murni di sini?', steps:['Farhan membantu ibu = tolong-menolong','Memotong dengan cermat = berhati-hati dan rajin','Nilai murni: tolong-menolong dan rajin bekerja ✓'] }
+  },
+  'Karangan': {
+    title:'Karangan', emoji:'✍️', color:'#c2410c', bg:'#fff7ed',
+    tip:'💡 Pastikan karangan ada TIGA bahagian: Pengenalan, Isi (2-3 perenggan), Penutup.',
+    concepts:[
+      { icon:'📋', label:'Struktur Karangan', text:'Perenggan 1: Pengenalan (perkenalkan topik). Perenggan 2-4: Isi (hujah + contoh + penerangan). Perenggan terakhir: Kesimpulan (rumusan + pandangan).' },
+      { icon:'🔗', label:'Kata Hubung Berguna', text:'Pengenalan: "Pada masa kini...". Isi: "Selain itu...", "Di samping itu...", "Seterusnya...". Penutup: "Kesimpulannya...", "Sebagai rumusan...".' },
+      { icon:'✍️', label:'Penutup Berkesan', text:'Penutup yang baik: merumuskan isi utama, menggunakan bahasa matang, memberi cadangan atau harapan kepada pembaca.' },
+      { icon:'📝', label:'Jenis Karangan', text:'Cerita: watak, plot, dialog. Perbincangan: hujah pro dan kontra. Laporan: fakta, objektif. Surat: format rasmi atau tidak rasmi.' },
+    ],
+    example:{ q:'Tulis penutup yang berkesan untuk karangan tentang perpaduan.', steps:['Rumuskan isi: perpaduan penting untuk negara','Bahasa matang: "berganding bahu", "demi kemakmuran"','Contoh: "Kesimpulannya, semua pihak haruslah berganding bahu memupuk semangat perpaduan demi menjamin kemakmuran negara kita." ✓'] }
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+const LS = {
+  get:(k,def)=>{ try{const v=localStorage.getItem(AF_PREFIX+k);return v?JSON.parse(v):def;}catch{return def;} },
+  set:(k,v)=>{ try{localStorage.setItem(AF_PREFIX+k,JSON.stringify(v));}catch{} },
+};
+
+function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
+
+function saveResult(subject, mode, score, total, breakdown) {
+  const all = LS.get('results',[]);
+  all.push({ iso:new Date().toISOString(), date:new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'}), subject, mode, score, total, pct:Math.round((score/total)*100), breakdown });
+  LS.set('results', all);
+}
+function getResults(){ return LS.get('results',[]); }
+
+function subjectStats(sub) {
+  const rs = getResults().filter(r=>r.subject===sub);
+  if (!rs.length) return null;
+  const avg = Math.round(rs.reduce((a,b)=>a+b.pct,0)/rs.length);
+  const best = Math.max(...rs.map(r=>r.pct));
+  const quizRs = rs.filter(r=>r.mode==='quiz');
+  const drillRs = rs.filter(r=>r.mode==='drill');
+  const quizAvg = quizRs.length ? Math.round(quizRs.reduce((a,b)=>a+b.pct,0)/quizRs.length) : null;
+  const drillAvg = drillRs.length ? Math.round(drillRs.reduce((a,b)=>a+b.pct,0)/drillRs.length) : null;
+  const perfectDrills = rs.filter(r=>r.mode==='drill'&&r.pct===100).length;
+  return { avg, best, count:rs.length, perfectDrills, quizAvg, drillAvg };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONFETTI
+// ═══════════════════════════════════════════════════════════════
+function Confetti() {
+  const pieces = Array.from({length:30},(_,i)=>({ id:i, left:Math.random()*100, delay:Math.random()*1.2, color:['#f59e0b','#3b82f6','#10b981','#ec4899','#a855f7','#f97316'][i%6], size:8+Math.random()*8 }));
+  return <>{pieces.map(p=><div key={p.id} className="confetti-piece" style={{left:`${p.left}%`,top:'-20px',background:p.color,width:`${p.size}px`,height:`${p.size}px`,animationDelay:`${p.delay}s`}} />)}</>;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: HOME
+// ═══════════════════════════════════════════════════════════════
+function HomeScreen({ onSelect, onProgress }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-teal-50 flex flex-col items-center justify-center p-6">
+      <div className="text-center mb-8">
+        <div className="text-7xl mb-2">🏆</div>
+        <h1 className="text-4xl font-bold text-blue-800">Aqil PSLE Champion!</h1>
+        <p className="text-gray-500 mt-2 text-sm">Choose a subject to practise for PSLE</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 w-full max-w-sm mb-6">
+        {Object.entries(CFG).map(([key, cfg]) => {
+          const st = subjectStats(key);
+          return (
+            <button key={key} onClick={()=>onSelect(key)}
+              className="rounded-2xl p-5 flex flex-col items-center gap-2 shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 bg-white border-t-4"
+              style={{ borderColor: cfg.hdr }}>
+              <span className="text-4xl">{cfg.emoji}</span>
+              <span className="font-bold text-gray-700 text-sm text-center">{cfg.label}</span>
+              <span className="text-xs text-gray-400">Tap to start</span>
+              {st ? <span className="text-xs font-semibold" style={{color:cfg.hdr}}>Avg {st.avg}%</span> : null}
+            </button>
+          );
+        })}
+      </div>
+
+      <button onClick={onProgress} className="flex items-center gap-2 bg-white shadow rounded-xl px-6 py-3 hover:shadow-md transition-all">
+        <span className="text-2xl">📊</span>
+        <span className="text-sm font-semibold text-gray-700">My Progress</span>
+      </button>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: SUBJECT SELECT
+// ═══════════════════════════════════════════════════════════════
+function SubjectSelectScreen({ subject, onMode, onBack }) {
+  const cfg = CFG[subject];
+  const [pickingDiff, setPickingDiff] = useState(false);
+
+  if (pickingDiff) {
+    return (
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: cfg.bg }}>
+        <div className="p-5 flex items-center gap-3 text-white" style={{ backgroundColor: cfg.hdr }}>
+          <button onClick={()=>setPickingDiff(false)} className="text-white/70 hover:text-white text-xl">←</button>
+          <h1 className="text-xl font-bold">📝 Choose Difficulty</h1>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-6">
+          <div className="text-center mb-6">
+            <div className="text-6xl mb-2">{cfg.emoji}</div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-1">Quiz Difficulty</h2>
+            <p className="text-gray-500 text-sm">Pick your challenge level!</p>
+          </div>
+          <div className="flex flex-col gap-4 w-full max-w-sm">
+            {[['easy','🟢','Easy','Standard PSLE questions — great for building confidence'],['medium','🟡','Medium','Trickier questions — step up the challenge!'],['hard','🔴','Hard','Challenging PSLE-level questions — for the champion! 🏆']].map(([diff,icon,label,desc])=>(
+              <button key={diff} onClick={()=>onMode('quiz',diff)}
+                className="bg-white rounded-2xl p-5 shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95 border-l-4"
+                style={{borderColor: diff==='easy'?'#22c55e':diff==='medium'?'#eab308':'#ef4444'}}>
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">{icon}</span>
+                  <div className="text-left">
+                    <div className="text-lg font-bold text-gray-800">{label}</div>
+                    <div className="text-xs text-gray-500">{desc}</div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: cfg.bg }}>
+      <div className="p-5 flex items-center gap-3 text-white" style={{ backgroundColor: cfg.hdr }}>
+        <button onClick={onBack} className="text-white/70 hover:text-white text-xl">←</button>
+        <h1 className="text-xl font-bold">{cfg.emoji} {cfg.label}</h1>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center p-6">
+        <div className="text-center mb-8">
+          <div className="text-6xl mb-3">{cfg.emoji}</div>
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Choose Mode</h2>
+          <p className="text-gray-500 text-sm">Quiz or Drill?</p>
+        </div>
+        <div className="flex flex-col gap-4 w-full max-w-sm">
+          <button onClick={()=>setPickingDiff(true)}
+            className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95">
+            <div className="text-5xl mb-2">📝</div>
+            <h3 className="text-xl font-bold text-gray-800">Quiz Mode</h3>
+            <p className="text-xs text-gray-500 mt-1">Full PSLE-style quiz — choose your difficulty level!</p>
+          </button>
+          <button onClick={()=>onMode('drill')}
+            className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95">
+            <div className="text-5xl mb-2">⚡</div>
+            <h3 className="text-xl font-bold text-gray-800">Drill Mode</h3>
+            <p className="text-xs text-gray-500 mt-1">Master one topic — keep going until 10/10 correct!</p>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEACH PANELS
+// ═══════════════════════════════════════════════════════════════
+function TeachPanel({ t, onDone, onHome }) {
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: t.bg }}>
+      <div className="p-4" style={{ backgroundColor: t.color }}>
+        <div className="text-white font-bold text-sm">{t.emoji} {t.title}</div>
+      </div>
+      <div className="flex-1 p-5 flex flex-col gap-4 max-w-lg mx-auto w-full overflow-y-auto">
+        <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4" style={{ borderColor: t.color }}>
+          <div className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: t.color }}>📚 Teach — Key Ideas</div>
+          <div className="flex flex-col gap-3">
+            {t.concepts.map((c,i)=>(
+              <div key={i} className="bg-gray-50 rounded-xl p-3">
+                <div className="font-bold text-sm mb-1">{c.icon} {c.label}</div>
+                <div className="text-xs text-gray-600 leading-relaxed">{c.text}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-amber-400">
+          <div className="text-xs font-bold uppercase tracking-wide mb-3 text-amber-600">🔍 Learn — Worked Example</div>
+          <div className="font-semibold text-sm text-gray-800 mb-3">{t.example.q}</div>
+          <div className="flex flex-col gap-2">
+            {t.example.steps.map((s,i)=>(
+              <div key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full text-white flex items-center justify-center text-xs font-bold" style={{backgroundColor:t.color}}>{i+1}</span>
+                <span>{s}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl p-4 text-sm font-medium" style={{ backgroundColor:t.color+'15', color:t.color, border:`1px solid ${t.color}40` }}>{t.tip}</div>
+        <button onClick={onDone} className="w-full text-white font-bold py-4 rounded-2xl text-base shadow-md transition-all hover:opacity-90" style={{ backgroundColor:t.color }}>
+          ✏️ Start Practice!
+        </button>
+        {onHome && (
+          <button onClick={onHome} className="w-full bg-white border-2 border-gray-200 text-gray-500 font-semibold py-3 rounded-2xl text-sm hover:bg-gray-50 transition-all">
+            🏠 Return to Home
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function getTeachPanel(subject, section) {
+  const banks = { english:ENGLISH_TEACH, math:MATH_TEACH, science:SCIENCE_TEACH, malay:MALAY_TEACH };
+  return banks[subject]?.[section] || null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: QUIZ
+// ═══════════════════════════════════════════════════════════════
+function QuizScreen({ subject, onDone, onBack, difficulty }) {
+  function filterDiff(qs) {
+    if (!difficulty || difficulty==='easy') return qs.filter(q=>!q.difficulty||q.difficulty==='easy');
+    if (difficulty==='medium') return qs.filter(q=>q.difficulty==='medium');
+    return qs.filter(q=>q.difficulty==='hard');
+  }
+
+  const [questions] = useState(()=>{
+    const sectionOrder = {
+      english:['Grammar','Vocabulary','Grammar Cloze','Editing','Comprehension','Synthesis'],
+      math:['Section A: MCQ','Section B: Short Answer','Section C: Word Problems'],
+      science:['Diversity','Cycles','Systems','Interactions','Energy'],
+      malay:['Tatabahasa','Kosa Kata','Kefahaman','Karangan'],
+    }[subject] || [];
+
+    const result = [];
+    sectionOrder.forEach(sec=>{
+      const sqs = QB[subject].filter(q=>(q.section||q.topic)===sec);
+      const filtered = filterDiff(sqs);
+      const pool = filtered.length>=2 ? filtered : sqs.filter(q=>!q.difficulty||q.difficulty==='easy');
+      const n = subject==='math' ? (sec==='Section C: Word Problems'?3:4) : 4;
+      shuffle(pool).slice(0,n).forEach(q=>result.push({...q, shuffledOpts:q.opts?shuffle(q.opts):[]}));
+    });
+    return result.length ? result : shuffle(QB[subject]).slice(0,20).map(q=>({...q,shuffledOpts:q.opts?shuffle(q.opts):[]}));
+  });
+
+  const [idx, setIdx] = useState(0);
+  const [selected, setSel] = useState(null);
+  const [showHint, setShowHint] = useState(false);
+  const answersRef = useRef([]);
+  const taughtSections = useRef(new Set());
+
+  const firstKey = questions[0]?.section||questions[0]?.topic;
+  const [showTeachFor, setShowTeachFor] = useState(()=>{
+    if (firstKey && getTeachPanel(subject, firstKey)) return firstKey;
+    return null;
+  });
+
+  const cfg = CFG[subject];
+  const q = questions[idx];
+
+  function dismissTeach() { taughtSections.current.add(showTeachFor); setShowTeachFor(null); }
+
+  function pick(opt) {
+    if (selected!==null) return;
+    setSel(opt);
+    answersRef.current = [...answersRef.current, { q, chosen:opt, correct: typeof q.ans==='number' ? q.opts[q.ans]===opt : opt===q.ans }];
+  }
+
+  function next() {
+    if (idx+1>=questions.length) {
+      const allA = answersRef.current;
+      const score = allA.filter(a=>a.correct).length;
+      const bd = {};
+      allA.forEach(a=>{ const sec=a.q.section||a.q.topic||'General'; if(!bd[sec]) bd[sec]={correct:0,total:0}; bd[sec].total++; if(a.correct) bd[sec].correct++; });
+      onDone(score, questions.length, bd);
+    } else {
+      const nextKey = questions[idx+1]?.section||questions[idx+1]?.topic;
+      setIdx(i=>i+1); setSel(null); setShowHint(false);
+      if (nextKey && getTeachPanel(subject,nextKey) && !taughtSections.current.has(nextKey)) setShowTeachFor(nextKey);
+    }
+  }
+
+  if (showTeachFor) {
+    const t = getTeachPanel(subject, showTeachFor);
+    if (t) return <TeachPanel t={t} onDone={dismissTeach} onHome={onBack} />;
+  }
+
+  const pct = (idx/questions.length)*100;
+  const ansOpt = q && q.opts && typeof q.ans==='number' ? q.opts[q.ans] : q?.ans;
+  const isCorrect = selected!==null && (selected===ansOpt);
+  const diffLabel = difficulty && difficulty!=='easy' ? ` · ${difficulty==='medium'?'🟡':'🔴'} ${difficulty.charAt(0).toUpperCase()+difficulty.slice(1)}` : '';
+
+  if (!q) return null;
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor:cfg.bg }}>
+      <div className="p-4 flex items-center gap-3 text-white" style={{ backgroundColor:cfg.hdr }}>
+        <button onClick={onBack} className="text-white/70 hover:text-white text-xl" title="Return to Home">🏠</button>
+        <div className="flex-1">
+          <div className="flex justify-between text-xs mb-1.5 text-white/80">
+            <span>{cfg.emoji} {cfg.label}{diffLabel}</span>
+            <span>Q{idx+1}/{questions.length}</span>
+          </div>
+          <div className="w-full bg-white/30 rounded-full h-2">
+            <div className="bg-white h-2 rounded-full transition-all duration-500" style={{width:`${pct}%`}} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 p-5 flex flex-col gap-4 max-w-lg mx-auto w-full pop">
+        {(q.section||q.topic) && (
+          <div className="inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full w-fit text-white" style={{backgroundColor:cfg.hdr+'cc'}}>
+            {q.section||q.topic}
+          </div>
+        )}
+        {q.passage && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4" style={{borderColor:cfg.hdr}}>
+            <p className="text-xs text-gray-600 italic leading-relaxed">{q.passage}</p>
+          </div>
+        )}
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <p className="text-base font-semibold text-gray-800 leading-relaxed">{q.q}</p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {q.opts && q.shuffledOpts.map((opt,i)=>{
+            let cls = 'bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-400 cursor-pointer';
+            if (selected!==null) {
+              if (opt===ansOpt) cls='bg-green-50 border-2 border-green-500 text-green-800';
+              else if (opt===selected) cls='bg-red-50 border-2 border-red-400 text-red-700';
+              else cls='bg-white border-2 border-gray-200 text-gray-400 opacity-50';
+            }
+            return (
+              <button key={i} onClick={()=>pick(opt)} className={`${cls} rounded-xl p-4 text-left font-medium transition-all text-sm`}>
+                <span className="text-gray-400 mr-2 font-normal">{['A','B','C','D'][i]}.</span>{opt}
+              </button>
+            );
+          })}
+        </div>
+
+        {selected!==null && (
+          <div className={`rounded-xl p-4 pop ${isCorrect?'bg-green-50 border border-green-200':'bg-red-50 border border-red-200'}`}>
+            <p className="font-semibold mb-1 text-sm">{isCorrect?'✅ Correct!':`❌ Answer: ${ansOpt}`}</p>
+            {q.exp && <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{__html:q.exp}} />}
+          </div>
+        )}
+
+        {selected===null && q.hint && (
+          <button onClick={()=>setShowHint(!showHint)} className="text-xs text-blue-600 hover:text-blue-700 font-semibold">
+            {showHint?'💡 Hide hint':'💡 Show hint'}
+          </button>
+        )}
+        {showHint && q.hint && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <p className="text-xs text-blue-800">{q.hint}</p>
+          </div>
+        )}
+
+        {selected!==null && (
+          <button onClick={next} className={`${cfg.btn} text-white font-bold py-3 rounded-xl transition-all pop`}>
+            {idx+1>=questions.length?'See Results 🎉':'Next →'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: DRILL
+// ═══════════════════════════════════════════════════════════════
+function DrillScreen({ subject, topic, onDone, onBack, onHome }) {
+  const [questions] = useState(()=>{
+    const filtered = QB[subject].filter(q=>(q.section||q.topic)===topic && (!q.pool||q.pool!=='quiz'));
+    const pool = filtered.length ? filtered : QB[subject].filter(q=>(q.section||q.topic)===topic);
+    return shuffle(pool).slice(0,10).map(q=>({...q,shuffledOpts:q.opts?shuffle(q.opts):[]}));
+  });
+  const [queue, setQueue] = useState([...Array(Math.min(10,questions.length)).keys()]);
+  const [idx, setIdx] = useState(0);
+  const [selected, setSel] = useState(null);
+  const cfg = CFG[subject];
+  const q = questions[queue[idx]];
+
+  function pick(opt) {
+    if (selected!==null) return;
+    setSel(opt);
+    const ansOpt = typeof q.ans==='number' ? q.opts[q.ans] : q.ans;
+    const isCorrect = opt===ansOpt;
+    if (!isCorrect) {
+      const newQ = [...queue.slice(1), queue[idx]];
+      setTimeout(()=>{ setQueue(newQ); setIdx(0); setSel(null); }, 1200);
+    }
+  }
+
+  function next() {
+    if (queue.length===1) { onDone(true); return; }
+    const newQ = queue.slice(1);
+    setQueue(newQ); setIdx(0); setSel(null);
+  }
+
+  if (!q) return <div className="min-h-screen flex items-center justify-center text-gray-500">No questions available for this topic.</div>;
+
+  const total = Math.min(10, questions.length);
+  const correct = total - queue.length;
+  const pct = (correct/total)*100;
+  const ansOpt = typeof q.ans==='number' ? q.opts[q.ans] : q.ans;
+  const isRight = selected!==null && selected===ansOpt;
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor:cfg.bg }}>
+      <div className="p-4 flex items-center gap-3 text-white" style={{ backgroundColor:cfg.hdr }}>
+        <button onClick={onHome||onBack} className="text-white/70 hover:text-white text-xl" title="Return to Home">🏠</button>
+        <div className="flex-1">
+          <div className="flex justify-between text-xs mb-1.5 text-white/80">
+            <span>{cfg.emoji} Drill: {topic}</span>
+            <span>{correct}/{total} correct</span>
+          </div>
+          <div className="w-full bg-white/30 rounded-full h-2">
+            <div className="bg-white h-2 rounded-full transition-all duration-500" style={{width:`${pct}%`}} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 p-5 flex flex-col gap-4 max-w-lg mx-auto w-full pop">
+        <div className="inline-flex text-xs font-semibold px-3 py-1 rounded-full w-fit text-white" style={{backgroundColor:cfg.hdr+'cc'}}>
+          {correct}/{total} Correct
+        </div>
+        {q.passage && (
+          <div className="bg-white rounded-2xl p-4 shadow-sm border-l-4" style={{borderColor:cfg.hdr}}>
+            <p className="text-xs text-gray-600 italic leading-relaxed">{q.passage}</p>
+          </div>
+        )}
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <p className="text-base font-semibold text-gray-800 leading-relaxed">{q.q}</p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {q.shuffledOpts.map((opt,i)=>{
+            let cls='bg-white border-2 border-gray-200 text-gray-700 hover:border-gray-400 cursor-pointer';
+            if (selected!==null) {
+              if (opt===ansOpt) cls='bg-green-50 border-2 border-green-500 text-green-800';
+              else if (opt===selected) cls='bg-red-50 border-2 border-red-400 text-red-700';
+              else cls='bg-white border-2 border-gray-200 text-gray-400 opacity-50';
+            }
+            return (
+              <button key={i} onClick={()=>pick(opt)} className={`${cls} rounded-xl p-4 text-left font-medium transition-all text-sm`}>
+                <span className="text-gray-400 mr-2 font-normal">{['A','B','C','D'][i]}.</span>{opt}
+              </button>
+            );
+          })}
+        </div>
+
+        {selected!==null && (
+          <div className={`rounded-xl p-4 pop ${isRight?'bg-green-50 border border-green-200':'bg-red-50 border border-red-200'}`}>
+            <p className="font-semibold mb-1 text-sm">{isRight?'✅ Correct!':isRight===false&&!isRight?`❌ Answer: ${ansOpt}`:''}</p>
+            {!isRight && <p className="font-semibold mb-1 text-sm text-red-700">❌ Answer: {ansOpt}</p>}
+            {q.exp && <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{__html:q.exp}} />}
+            {!isRight && <p className="text-xs text-orange-600 mt-1">Moving to end of queue — try again!</p>}
+          </div>
+        )}
+
+        {selected!==null && isRight && (
+          <button onClick={next} className={`${cfg.btn} text-white font-bold py-3 rounded-xl transition-all pop`}>
+            {queue.length===1?'✅ Complete!':'Continue →'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: RESULTS
+// ═══════════════════════════════════════════════════════════════
+function ResultsScreen({ subject, score, total, breakdown, mode, onHome, onRetry }) {
+  const cfg = CFG[subject];
+  const pct = Math.round((score/total)*100);
+  const star = pct>=90?'🏆':pct>=70?'🌟':pct>=50?'👍':'💪';
+  const msg = pct>=90?'Outstanding!':pct>=70?'Great job!':pct>=50?'Good effort!':'Keep going!';
+  const showConf = pct>=70;
+
+  useEffect(()=>{ saveResult(subject, mode, score, total, breakdown); }, []);
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor:cfg.bg }}>
+      {showConf && <Confetti />}
+      <div className="bg-white rounded-3xl shadow-lg p-7 w-full max-w-sm text-center pop">
+        <div className="text-6xl mb-2">{pct===100?'🌟':star}</div>
+        <h2 className="text-4xl font-bold text-gray-800">{score}/{total}</h2>
+        <p className={`text-lg font-semibold mt-1 ${pct>=70?'text-emerald-600':'text-orange-500'}`}>{pct}% — {msg}</p>
+        {pct===100 && (
+          <div className="mt-3 bg-blue-50 rounded-lg p-2">
+            <p className="text-sm font-bold text-blue-800">🎉 Perfect {mode==='quiz'?'Quiz':'Drill'}! Well done, Aqil!</p>
+          </div>
+        )}
+        <p className="text-gray-400 text-xs mt-2 mb-5">Score saved automatically ✓</p>
+
+        <div className="text-left mb-5">
+          <p className="font-semibold text-gray-600 text-xs uppercase tracking-wide mb-2">Topic Breakdown</p>
+          {Object.entries(breakdown||{}).map(([topic,d])=>{
+            const p=Math.round((d.correct/d.total)*100);
+            const col=p>=80?'bg-emerald-500':p>=60?'bg-amber-400':'bg-red-400';
+            return (
+              <div key={topic} className="mb-2.5">
+                <div className="flex justify-between text-xs text-gray-500 mb-1"><span>{topic}</span><span>{d.correct}/{d.total}</span></div>
+                <div className="w-full bg-gray-100 rounded-full h-2"><div className={`${col} h-2 rounded-full`} style={{width:`${p}%`}} /></div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onRetry} className={`flex-1 ${cfg.btn} text-white font-semibold py-3 rounded-xl`}>Try Again</button>
+          <button onClick={onHome} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-xl">Home</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: PROGRESS
+// ═══════════════════════════════════════════════════════════════
+function ProgressScreen({ onBack }) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 to-indigo-100 pb-8">
+      <div className="bg-blue-700 text-white p-6 flex items-center gap-3">
+        <button onClick={onBack} className="text-white/70 hover:text-white text-xl">←</button>
+        <h1 className="text-2xl font-bold">My Progress</h1>
+      </div>
+      <div className="max-w-lg mx-auto p-6 space-y-5">
+        {Object.entries(CFG).map(([key,cfg])=>{
+          const st = subjectStats(key);
+          if (!st) return (
+            <div key={key} className="bg-white rounded-2xl p-5 shadow-md">
+              <div className="flex items-center gap-2 mb-1"><span className="text-2xl">{cfg.emoji}</span><h3 className="text-lg font-bold text-gray-700">{cfg.label}</h3></div>
+              <p className="text-sm text-gray-400 italic">Not started yet</p>
+            </div>
+          );
+          return (
+            <div key={key} className="bg-white rounded-2xl p-5 shadow-md">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">{cfg.emoji}</span>
+                <h3 className="text-lg font-bold text-gray-800">{cfg.label}</h3>
+                <span className="ml-auto text-xs text-gray-400">{st.count} session{st.count!==1?'s':''}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="bg-blue-50 rounded-xl p-3 text-center">
+                  <div className="text-xl font-bold text-blue-600">{st.quizAvg!==null?`${st.quizAvg}%`:'—'}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">📝 Quiz Avg</div>
+                </div>
+                <div className="bg-violet-50 rounded-xl p-3 text-center">
+                  <div className="text-xl font-bold text-violet-600">{st.drillAvg!==null?`${st.drillAvg}%`:'—'}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">⚡ Drill Avg</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-green-50 rounded-xl p-3 text-center">
+                  <div className="text-xl font-bold text-green-600">{st.best}%</div>
+                  <div className="text-xs text-gray-500 mt-0.5">🏆 Best</div>
+                </div>
+                <div className="bg-yellow-50 rounded-xl p-3 text-center">
+                  <div className="text-xl font-bold text-yellow-600">{st.perfectDrills}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">⭐ Perfect Drills</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SCREEN: TOPIC SELECT
+// ═══════════════════════════════════════════════════════════════
+function TopicSelectScreen({ subject, onSelect, onBack }) {
+  const cfg = CFG[subject];
+  const topics = {
+    english:['Grammar','Vocabulary','Grammar Cloze','Editing','Comprehension'],
+    math:['Section A: MCQ','Section B: Short Answer','Section C: Word Problems'],
+    science:['Diversity','Cycles','Systems','Interactions','Energy'],
+    malay:['Tatabahasa','Kosa Kata','Kefahaman','Karangan'],
+  }[subject]||[];
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor:cfg.bg }}>
+      <div className="p-5 flex items-center gap-3 text-white" style={{ backgroundColor:cfg.hdr }}>
+        <button onClick={onBack} className="text-white/70 hover:text-white text-xl">←</button>
+        <h1 className="text-xl font-bold">Choose Topic — Drill Mode</h1>
+      </div>
+      <div className="flex-1 p-6 max-w-lg mx-auto w-full space-y-3">
+        {topics.map(t=>(
+          <button key={t} onClick={()=>onSelect(t)}
+            className="w-full bg-white rounded-2xl p-4 shadow hover:shadow-md transition-all text-left font-semibold text-gray-800 hover:scale-105 active:scale-95"
+            style={{ borderLeft:`4px solid ${cfg.hdr}` }}>
+            {t}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// APP ROOT
+// ═══════════════════════════════════════════════════════════════
+function App() {
+  const [screen, setScreen] = useState('home');
+  const [subject, setSubj] = useState(null);
+  const [mode, setMode] = useState(null);
+  const [topic, setTopic] = useState(null);
+  const [result, setResult] = useState(null);
+  const [difficulty, setDiff] = useState('easy');
+
+  function onSubjectSelect(s) { setSubj(s); setScreen('subject-select'); }
+  function onMode(m, diff='easy') {
+    setDiff(diff);
+    if (m==='drill') { setMode('drill'); setScreen('select-topic'); }
+    else { setMode('quiz'); setScreen('quiz'); }
+  }
+  function onDone(score, total, breakdown) { setResult({score,total,breakdown}); setScreen('result'); }
+  function onDrillDone() { setResult({score:10,total:10,breakdown:{[topic]:{correct:10,total:10}}}); setScreen('result'); }
+
+  return (
+    <>
+      {screen==='home' && <HomeScreen onSelect={onSubjectSelect} onProgress={()=>setScreen('progress')} />}
+      {screen==='subject-select' && <SubjectSelectScreen subject={subject} onMode={onMode} onBack={()=>setScreen('home')} />}
+      {screen==='select-topic' && <TopicSelectScreen subject={subject} onSelect={t=>{setTopic(t);setScreen('drill');}} onBack={()=>setScreen('subject-select')} />}
+      {screen==='quiz' && <QuizScreen subject={subject} onDone={onDone} onBack={()=>setScreen('home')} difficulty={difficulty} />}
+      {screen==='drill' && <DrillScreen subject={subject} topic={topic} onDone={onDrillDone} onBack={()=>setScreen('select-topic')} onHome={()=>setScreen('home')} />}
+      {screen==='result' && result && (
+        <ResultsScreen subject={subject} score={result.score} total={result.total} breakdown={result.breakdown} mode={mode}
+          onHome={()=>setScreen('home')}
+          onRetry={()=>{ if(mode==='drill') setScreen('select-topic'); else setScreen('subject-select'); }} />
+      )}
+      {screen==='progress' && <ProgressScreen onBack={()=>setScreen('home')} />}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
