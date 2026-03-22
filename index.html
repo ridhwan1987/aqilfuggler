@@ -761,7 +761,7 @@ function ResultsScreen({ subject, score, total, breakdown, mode, difficulty, onH
   const msg = pct>=90?'Outstanding!':pct>=70?'Great job!':pct>=50?'Good effort!':'Keep going!';
   const showConf = pct>=70;
 
-  useEffect(()=>{ saveResult(subject, mode, score, total, breakdown, difficulty); }, []);
+  useEffect(()=>{ saveResult(subject, mode, score, total, breakdown, difficulty); syncToFirebase(); }, []);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor:cfg.bg }}>
