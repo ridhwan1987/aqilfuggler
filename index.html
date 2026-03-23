@@ -285,14 +285,15 @@ function getFirebaseUrl() {
 }
 async function syncToFirebase() {
   const url = getFirebaseUrl();
-  if (!url) return;
+  if (!url) return false;
   try {
-    await fetch(url.replace(/\/$/, '') + '/af_data.json', {
+    const res = await fetch(url.replace(/\/$/, '') + '/af_data.json', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ results: getResults() })
     });
-  } catch(e) { console.warn('Firebase sync failed', e); }
+    return res.ok;
+  } catch(e) { console.warn('Firebase sync failed', e); return false; }
 }
 async function loadFromFirebase() {
   const url = getFirebaseUrl();
@@ -300,7 +301,7 @@ async function loadFromFirebase() {
   try {
     const res = await fetch(url.replace(/\/$/, '') + '/af_data.json');
     const data = await res.json();
-    if (!data) return false;
+    if (!data) return true; // empty DB is not an error
     if (data.results) LS.set('results', data.results);
     return true;
   } catch(e) { console.warn('Firebase load failed', e); return false; }
@@ -924,8 +925,8 @@ function ParentDashboard({ onBack }) {
   function saveFbUrl() {
     localStorage.setItem(AF_PREFIX + 'firebase_url', fbInput.trim());
     setSyncMsg('Saving…');
-    syncToFirebase().then(() => {
-      setSyncMsg('Saved & uploaded! On your other device, enter the same URL and click Refresh.');
+    syncToFirebase().then(ok => {
+      setSyncMsg(ok ? 'Saved & uploaded! On your other device, enter the same URL and click Refresh.' : 'Upload failed — check your Firebase rules (Rules tab → set .read/.write to true).');
     });
   }
 
