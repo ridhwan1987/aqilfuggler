@@ -1025,7 +1025,13 @@ function ParentDashboard({ onBack }) {
 // ═══════════════════════════════════════════════════════════════
 function App() {
   const [screen, setScreen] = useState('home');
-  useEffect(() => { if (getFirebaseUrl()) loadFromFirebase(); }, []);
+  useEffect(() => {
+    const DEFAULT_URL = 'https://aqilfuggler-default-rtdb.asia-southeast1.firebasedatabase.app';
+    if (!localStorage.getItem(AF_PREFIX + 'firebase_url')) {
+      localStorage.setItem(AF_PREFIX + 'firebase_url', DEFAULT_URL);
+    }
+    loadFromFirebase();
+  }, []);
   const [subject, setSubj] = useState(null);
   const [mode, setMode] = useState(null);
   const [topic, setTopic] = useState(null);
