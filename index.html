@@ -302,7 +302,13 @@ async function loadFromFirebase() {
     const res = await fetch(url.replace(/\/$/, '') + '/af_data.json');
     const data = await res.json();
     if (!data) return true; // empty DB is not an error
-    if (data.results) LS.set('results', data.results);
+    if (data.results && data.results.length > 0) {
+      const local = LS.get('results', []);
+      // Only import from cloud if cloud has at least as many sessions as local
+      if (data.results.length >= local.length) {
+        LS.set('results', data.results);
+      }
+    }
     return true;
   } catch(e) { console.warn('Firebase load failed', e); return false; }
 }
@@ -1019,6 +1025,7 @@ function ParentDashboard({ onBack }) {
 // ═══════════════════════════════════════════════════════════════
 function App() {
   const [screen, setScreen] = useState('home');
+  useEffect(() => { if (getFirebaseUrl()) loadFromFirebase(); }, []);
   const [subject, setSubj] = useState(null);
   const [mode, setMode] = useState(null);
   const [topic, setTopic] = useState(null);
