@@ -526,13 +526,20 @@ function QuizScreen({ subject, onDone, onBack, difficulty }) {
       malay:['Tatabahasa','Kosa Kata','Kefahaman','Karangan'],
     }[subject] || [];
 
-    const mathN = {'Section A: MCQ':14,'Section B: Short Answer':13,'Section C: Word Problems':13};
+    // Per-section question counts, sized so every subject totals exactly 40/quiz
+    // (previously a flat 7/section left english at 42, science at 35, malay at 28).
+    const sectionN = {
+      math: {'Section A: MCQ':14,'Section B: Short Answer':13,'Section C: Word Problems':13},
+      english: {'Grammar':7,'Vocabulary':7,'Grammar Cloze':7,'Editing':7,'Comprehension':6,'Synthesis':6},
+      science: {'Diversity':8,'Cycles':8,'Systems':8,'Interactions':8,'Energy':8},
+      malay: {'Tatabahasa':10,'Kosa Kata':10,'Kefahaman':10,'Karangan':10},
+    };
     const result = [];
     sectionOrder.forEach(sec=>{
       const sqs = QB[subject].filter(q=>(q.section||q.topic)===sec);
       const filtered = filterDiff(sqs);
       const pool = filtered.length>=2 ? filtered : sqs.filter(q=>!q.difficulty||q.difficulty==='easy');
-      const n = subject==='math' ? (mathN[sec]??13) : 7;
+      const n = sectionN[subject]?.[sec] ?? 7;
       const usedKey = `af1_seen_${subject}_${difficulty||'easy'}_${sec.replace(/\W+/g,'_')}`;
       let seen = JSON.parse(localStorage.getItem(usedKey)||'[]');
       let avail = pool.filter(q=>!seen.includes(q.id));
