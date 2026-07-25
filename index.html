@@ -260,12 +260,27 @@ const LS = {
 
 function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
 
-function saveResult(subject, mode, score, total, breakdown, difficulty) {
+function saveResult(subject, mode, score, total, breakdown, difficulty, durationMin) {
   const all = LS.get('results',[]);
-  all.push({ iso:new Date().toISOString(), date:new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'}), subject, mode, score, total, pct:Math.round((score/total)*100), breakdown, difficulty: difficulty || 'unknown' });
+  all.push({ iso:new Date().toISOString(), date:new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'}), subject, mode, score, total, pct:Math.round((score/total)*100), breakdown, difficulty: difficulty || 'unknown', ...(typeof durationMin==='number' ? {durationMin} : {}) });
   LS.set('results', all);
 }
 function getResults(){ return LS.get('results',[]); }
+
+// Prefer the real recorded duration (quiz start to submission). Older sessions saved
+// before this was tracked fall back to the gap-to-previous-session estimate, which only
+// works when Aqil went straight from one session into the next.
+function attachSessionMinutes(results) {
+  return results.map((r, idx) => {
+    if (typeof r.durationMin === 'number') return { ...r, _mins: r.durationMin };
+    let mins = null;
+    if (idx > 0) {
+      const gapMin = (new Date(r.iso) - new Date(results[idx - 1].iso)) / 60000;
+      if (gapMin > 0 && gapMin < 60) mins = gapMin;
+    }
+    return { ...r, _mins: mins };
+  });
+}
 
 function subjectStats(sub) {
   const rs = getResults().filter(r=>r.subject===sub);
@@ -521,6 +536,7 @@ function QuizScreen({ subject, onDone, onBack, difficulty }) {
     return result.length ? result : shuffle(QB[subject]).slice(0,40).map(q=>({...q,shuffledOpts:q.opts?shuffle(q.opts):[]}));
   });
 
+  const [startTime] = useState(()=>Date.now());
   const [idx, setIdx] = useState(0);
   const [selected, setSel] = useState(null);
   const [showHint, setShowHint] = useState(false);
@@ -551,7 +567,7 @@ function QuizScreen({ subject, onDone, onBack, difficulty }) {
       const score = allA.filter(a=>a.correct).length;
       const bd = {};
       allA.forEach(a=>{ const sec=a.q.section||a.q.topic||'General'; if(!bd[sec]) bd[sec]={correct:0,total:0}; bd[sec].total++; if(a.correct) bd[sec].correct++; });
-      onDone(score, questions.length, bd);
+      onDone(score, questions.length, bd, (Date.now()-startTime)/60000);
     } else {
       const nextKey = questions[idx+1]?.section||questions[idx+1]?.topic;
       setIdx(i=>i+1); setSel(null); setShowHint(false); setShowMalayEng(false);
@@ -664,6 +680,7 @@ function DrillScreen({ subject, topic, onDone, onBack, onHome }) {
     const pool = filtered.length ? filtered : QB[subject].filter(q=>(q.section||q.topic)===topic);
     return shuffle(pool).slice(0,10).map(q=>({...q,shuffledOpts:q.opts?shuffle(q.opts):[]}));
   });
+  const [startTime] = useState(()=>Date.now());
   const [queue, setQueue] = useState([...Array(Math.min(10,questions.length)).keys()]);
   const [idx, setIdx] = useState(0);
   const [selected, setSel] = useState(null);
@@ -682,7 +699,7 @@ function DrillScreen({ subject, topic, onDone, onBack, onHome }) {
   }
 
   function next() {
-    if (queue.length===1) { onDone(true); return; }
+    if (queue.length===1) { onDone(true, (Date.now()-startTime)/60000); return; }
     const newQ = queue.slice(1);
     setQueue(newQ); setIdx(0); setSel(null);
   }
@@ -761,14 +778,14 @@ function DrillScreen({ subject, topic, onDone, onBack, onHome }) {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN: RESULTS
 // ═══════════════════════════════════════════════════════════════
-function ResultsScreen({ subject, score, total, breakdown, mode, difficulty, onHome, onRetry }) {
+function ResultsScreen({ subject, score, total, breakdown, mode, difficulty, durationMin, onHome, onRetry }) {
   const cfg = CFG[subject];
   const pct = Math.round((score/total)*100);
   const star = pct>=90?'🏆':pct>=70?'🌟':pct>=50?'👍':'💪';
   const msg = pct>=90?'Outstanding!':pct>=70?'Great job!':pct>=50?'Good effort!':'Keep going!';
   const showConf = pct>=70;
 
-  useEffect(()=>{ saveResult(subject, mode, score, total, breakdown, difficulty); syncToFirebase(); }, []);
+  useEffect(()=>{ saveResult(subject, mode, score, total, breakdown, difficulty, durationMin); syncToFirebase(); }, []);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor:cfg.bg }}>
@@ -1003,11 +1020,13 @@ function ParentDashboard({ onBack }) {
         {/* Recent sessions */}
         <div className="bg-white rounded-2xl p-5 shadow">
           <h3 className="text-base font-bold text-gray-800 mb-3">Recent Sessions</h3>
+          <p className="text-xs text-gray-400 mb-2">Time = actual minutes spent on the quiz. Older sessions (before this was tracked) show an estimate based on the gap to the previous session instead, or "—" if that gap isn't known.</p>
           <div className="space-y-2">
-            {all.slice().reverse().map((r, i) => (
-              <div key={i} className="flex justify-between text-sm py-2 border-b last:border-0">
+            {attachSessionMinutes(all).slice().reverse().map((r, i) => (
+              <div key={i} className="flex justify-between items-center text-sm py-2 border-b last:border-0 gap-2">
                 <span className="text-gray-600">{r.date} — {r.subject} ({r.mode})</span>
                 <span style={{background:'#eee',borderRadius:'4px',padding:'2px 6px',fontSize:'0.75em',textTransform:'capitalize'}}>{r.difficulty || '—'}</span>
+                <span className="text-xs text-gray-500 whitespace-nowrap">{r._mins !== null ? `${r._mins.toFixed(1)} min` : '—'}</span>
                 <span className={`font-bold ${r.pct >= 70 ? 'text-emerald-600' : 'text-red-500'}`}>{r.pct}%</span>
               </div>
             ))}
@@ -1044,8 +1063,8 @@ function App() {
     if (m==='drill') { setMode('drill'); setScreen('select-topic'); }
     else { setMode('quiz'); setScreen('quiz'); }
   }
-  function onDone(score, total, breakdown) { setResult({score,total,breakdown,difficulty}); setScreen('result'); }
-  function onDrillDone() { setResult({score:10,total:10,breakdown:{[topic]:{correct:10,total:10}}}); setScreen('result'); }
+  function onDone(score, total, breakdown, durationMin) { setResult({score,total,breakdown,difficulty,durationMin}); setScreen('result'); }
+  function onDrillDone(ok, durationMin) { setResult({score:10,total:10,breakdown:{[topic]:{correct:10,total:10}},durationMin}); setScreen('result'); }
 
   return (
     <>
@@ -1055,7 +1074,7 @@ function App() {
       {screen==='quiz' && <QuizScreen subject={subject} onDone={onDone} onBack={()=>setScreen('home')} difficulty={difficulty} />}
       {screen==='drill' && <DrillScreen subject={subject} topic={topic} onDone={onDrillDone} onBack={()=>setScreen('select-topic')} onHome={()=>setScreen('home')} />}
       {screen==='result' && result && (
-        <ResultsScreen subject={subject} score={result.score} total={result.total} breakdown={result.breakdown} mode={mode} difficulty={result.difficulty}
+        <ResultsScreen subject={subject} score={result.score} total={result.total} breakdown={result.breakdown} mode={mode} difficulty={result.difficulty} durationMin={result.durationMin}
           onHome={()=>setScreen('home')}
           onRetry={()=>{ if(mode==='drill') setScreen('select-topic'); else setScreen('subject-select'); }} />
       )}
