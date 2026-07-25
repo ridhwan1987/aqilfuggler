@@ -267,6 +267,14 @@ function saveResult(subject, mode, score, total, breakdown, difficulty, duration
 }
 function getResults(){ return LS.get('results',[]); }
 
+// Drill difficulty is a stale leftover from whatever quiz difficulty was last picked
+// (drill itself has no difficulty concept), so label drills by mode instead.
+function sessionLabel(r) {
+  if (r.mode === 'drill') return `Drill · ${r.total}Q`;
+  const diff = r.difficulty ? r.difficulty.charAt(0).toUpperCase() + r.difficulty.slice(1) : '—';
+  return `${diff} · ${r.total}Q`;
+}
+
 // Prefer the real recorded duration (quiz start to submission). Older sessions saved
 // before this was tracked fall back to the gap-to-previous-session estimate, which only
 // works when Aqil went straight from one session into the next.
@@ -1025,7 +1033,7 @@ function ParentDashboard({ onBack }) {
             {attachSessionMinutes(all).slice().reverse().map((r, i) => (
               <div key={i} className="flex justify-between items-center text-sm py-2 border-b last:border-0 gap-2">
                 <span className="text-gray-600">{r.date} — {r.subject} ({r.mode})</span>
-                <span style={{background:'#eee',borderRadius:'4px',padding:'2px 6px',fontSize:'0.75em',textTransform:'capitalize'}}>{r.difficulty || '—'}</span>
+                <span style={{background:'#eee',borderRadius:'4px',padding:'2px 6px',fontSize:'0.75em',textTransform:'capitalize'}}>{sessionLabel(r)}</span>
                 <span className="text-xs text-gray-500 whitespace-nowrap">{r._mins !== null ? `${r._mins.toFixed(1)} min` : '—'}</span>
                 <span className={`font-bold ${r.pct >= 70 ? 'text-emerald-600' : 'text-red-500'}`}>{r.pct}%</span>
               </div>
