@@ -271,6 +271,7 @@ function getResults(){ return LS.get('results',[]); }
 // (drill itself has no difficulty concept), so label drills by mode instead.
 function sessionLabel(r) {
   if (r.mode === 'drill') return `Drill · ${r.total}Q`;
+  if (r.mode === 'openended') return `Open Ended · ${r.total}Q`;
   const diff = r.difficulty ? r.difficulty.charAt(0).toUpperCase() + r.difficulty.slice(1) : '—';
   return `${diff} · ${r.total}Q`;
 }
@@ -450,6 +451,14 @@ function SubjectSelectScreen({ subject, onMode, onBack }) {
             <h3 className="text-xl font-bold text-gray-800">Drill Mode</h3>
             <p className="text-xs text-gray-500 mt-1">Master one topic — keep going until 10/10 correct!</p>
           </button>
+          {subject==='science' && (
+            <button onClick={()=>onMode('openended')}
+              className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all hover:scale-105 active:scale-95">
+              <div className="text-5xl mb-2">✍️</div>
+              <h3 className="text-xl font-bold text-gray-800">Quiz Mode (Open Ended)</h3>
+              <p className="text-xs text-gray-500 mt-1">Type your own answers — 40 hard PSLE-style open-ended questions!</p>
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -687,6 +696,137 @@ function QuizScreen({ subject, onDone, onBack, difficulty }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// SCREEN: OPEN ENDED QUIZ (science only — free-text, auto-graded by keyword match)
+// ═══════════════════════════════════════════════════════════════
+function normalizeAnswerText(s) {
+  return (s || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function gradeOpenEnded(userAnswer, keywords) {
+  const norm = normalizeAnswerText(userAnswer);
+  if (!norm) return false;
+  return keywords.some(k => norm.includes(normalizeAnswerText(k)));
+}
+
+function OpenEndedQuizScreen({ subject, onDone, onBack }) {
+  const [startTime] = useState(()=>Date.now());
+  const [questions] = useState(()=>{
+    const sectionOrder = ['Diversity','Cycles','Systems','Interactions','Energy'];
+    const n = 8;
+    const result = [];
+    sectionOrder.forEach(sec=>{
+      const pool = QB.scienceOpen.filter(q=>q.section===sec);
+      const usedKey = `af1_seen_openended_${subject}_${sec.replace(/\W+/g,'_')}`;
+      let seen = JSON.parse(localStorage.getItem(usedKey)||'[]');
+      let avail = pool.filter(q=>!seen.includes(q.id));
+      if (avail.length < n) { seen=[]; avail=pool; localStorage.setItem(usedKey,'[]'); }
+      const picked = shuffle(avail).slice(0,n);
+      localStorage.setItem(usedKey, JSON.stringify([...seen,...picked.map(q=>q.id)]));
+      picked.forEach(q=>result.push(q));
+    });
+    return result;
+  });
+
+  const [idx, setIdx] = useState(0);
+  const [answer, setAnswer] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [isCorrect, setIsCorrect] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const answersRef = useRef([]);
+  const cfg = CFG[subject];
+  const q = questions[idx];
+
+  function submit() {
+    if (submitted || !answer.trim()) return;
+    const correct = gradeOpenEnded(answer, q.keywords);
+    setIsCorrect(correct);
+    setSubmitted(true);
+    answersRef.current = [...answersRef.current, { q, userAnswer: answer, correct }];
+  }
+
+  function next() {
+    if (idx+1>=questions.length) {
+      const allA = answersRef.current;
+      const score = allA.filter(a=>a.correct).length;
+      const bd = {};
+      allA.forEach(a=>{ const sec=a.q.section; if(!bd[sec]) bd[sec]={correct:0,total:0}; bd[sec].total++; if(a.correct) bd[sec].correct++; });
+      onDone(score, questions.length, bd, (Date.now()-startTime)/60000);
+    } else {
+      setIdx(i=>i+1); setAnswer(''); setSubmitted(false); setIsCorrect(false); setShowHint(false);
+    }
+  }
+
+  if (!q) return <div className="min-h-screen flex items-center justify-center text-gray-500">No open-ended questions available.</div>;
+
+  const pct = (idx/questions.length)*100;
+
+  return (
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor:cfg.bg }}>
+      <div className="p-4 flex items-center gap-3 text-white" style={{ backgroundColor:cfg.hdr }}>
+        <button onClick={onBack} className="text-white/70 hover:text-white text-xl" title="Return to Home">🏠</button>
+        <div className="flex-1">
+          <div className="flex justify-between text-xs mb-1.5 text-white/80">
+            <span>{cfg.emoji} {cfg.label} · Open Ended</span>
+            <span>Q{idx+1}/{questions.length}</span>
+          </div>
+          <div className="w-full bg-white/30 rounded-full h-2">
+            <div className="bg-white h-2 rounded-full transition-all duration-500" style={{width:`${pct}%`}} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 p-5 flex flex-col gap-4 max-w-lg mx-auto w-full pop">
+        {q.section && (
+          <div className="inline-flex items-center text-xs font-semibold px-3 py-1 rounded-full w-fit text-white" style={{backgroundColor:cfg.hdr+'cc'}}>
+            {q.section}
+          </div>
+        )}
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <p className="text-base font-semibold text-gray-800 leading-relaxed">{q.q}</p>
+        </div>
+
+        {!submitted && (
+          <>
+            <textarea value={answer} onChange={e=>setAnswer(e.target.value)} rows={4}
+              placeholder="Type your answer here..."
+              className="w-full border-2 border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:border-violet-400" />
+            {q.hint && (
+              <button onClick={()=>setShowHint(!showHint)} className="text-xs text-blue-600 hover:text-blue-700 font-semibold self-start">
+                {showHint?'💡 Hide hint':'💡 Show hint'}
+              </button>
+            )}
+            {showHint && q.hint && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                <p className="text-xs text-blue-800">{q.hint}</p>
+              </div>
+            )}
+            <button onClick={submit} disabled={!answer.trim()}
+              className={`${cfg.btn} disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all pop`}>
+              Submit Answer
+            </button>
+          </>
+        )}
+
+        {submitted && (
+          <>
+            <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
+              <p className="text-xs text-gray-500 font-semibold mb-1">Your answer:</p>
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{answer}</p>
+            </div>
+            <div className={`rounded-xl p-4 pop ${isCorrect?'bg-green-50 border border-green-200':'bg-red-50 border border-red-200'}`}>
+              <p className="font-semibold mb-1 text-sm">{isCorrect?'✅ Correct!':'❌ Not quite — here is the model answer:'}</p>
+              {q.exp && <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{__html:q.exp}} />}
+            </div>
+            <button onClick={next} className={`${cfg.btn} text-white font-bold py-3 rounded-xl transition-all pop`}>
+              {idx+1>=questions.length?'See Results 🎉':'Next →'}
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // SCREEN: DRILL
 // ═══════════════════════════════════════════════════════════════
 function DrillScreen({ subject, topic, onDone, onBack, onHome }) {
@@ -811,7 +951,7 @@ function ResultsScreen({ subject, score, total, breakdown, mode, difficulty, dur
         <p className={`text-lg font-semibold mt-1 ${pct>=70?'text-emerald-600':'text-orange-500'}`}>{pct}% — {msg}</p>
         {pct===100 && (
           <div className="mt-3 bg-blue-50 rounded-lg p-2">
-            <p className="text-sm font-bold text-blue-800">🎉 Perfect {mode==='quiz'?'Quiz':'Drill'}! Well done, Aqil!</p>
+            <p className="text-sm font-bold text-blue-800">🎉 Perfect {mode==='quiz'?'Quiz':mode==='openended'?'Open-Ended Quiz':'Drill'}! Well done, Aqil!</p>
           </div>
         )}
         <p className="text-gray-400 text-xs mt-2 mb-5">Score saved automatically ✓</p>
@@ -1076,6 +1216,7 @@ function App() {
   function onMode(m, diff='easy') {
     setDiff(diff);
     if (m==='drill') { setMode('drill'); setScreen('select-topic'); }
+    else if (m==='openended') { setMode('openended'); setScreen('openended'); }
     else { setMode('quiz'); setScreen('quiz'); }
   }
   function onDone(score, total, breakdown, durationMin) { setResult({score,total,breakdown,difficulty,durationMin}); setScreen('result'); }
@@ -1088,6 +1229,7 @@ function App() {
       {screen==='select-topic' && <TopicSelectScreen subject={subject} onSelect={t=>{setTopic(t);setScreen('drill');}} onBack={()=>setScreen('subject-select')} />}
       {screen==='quiz' && <QuizScreen subject={subject} onDone={onDone} onBack={()=>setScreen('home')} difficulty={difficulty} />}
       {screen==='drill' && <DrillScreen subject={subject} topic={topic} onDone={onDrillDone} onBack={()=>setScreen('select-topic')} onHome={()=>setScreen('home')} />}
+      {screen==='openended' && <OpenEndedQuizScreen subject={subject} onDone={onDone} onBack={()=>setScreen('home')} />}
       {screen==='result' && result && (
         <ResultsScreen subject={subject} score={result.score} total={result.total} breakdown={result.breakdown} mode={mode} difficulty={result.difficulty} durationMin={result.durationMin}
           onHome={()=>setScreen('home')}
