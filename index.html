@@ -696,17 +696,8 @@ function QuizScreen({ subject, onDone, onBack, difficulty }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SCREEN: OPEN ENDED QUIZ (science only — free-text, auto-graded by keyword match)
+// SCREEN: OPEN ENDED QUIZ (science only — free-text, self-marked against a model answer)
 // ═══════════════════════════════════════════════════════════════
-function normalizeAnswerText(s) {
-  return (s || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
-}
-function gradeOpenEnded(userAnswer, keywords) {
-  const norm = normalizeAnswerText(userAnswer);
-  if (!norm) return false;
-  return keywords.some(k => norm.includes(normalizeAnswerText(k)));
-}
-
 function OpenEndedQuizScreen({ subject, onDone, onBack }) {
   const [startTime] = useState(()=>Date.now());
   const [questions] = useState(()=>{
@@ -728,22 +719,19 @@ function OpenEndedQuizScreen({ subject, onDone, onBack }) {
 
   const [idx, setIdx] = useState(0);
   const [answer, setAnswer] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [revealed, setRevealed] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const answersRef = useRef([]);
   const cfg = CFG[subject];
   const q = questions[idx];
 
-  function submit() {
-    if (submitted || !answer.trim()) return;
-    const correct = gradeOpenEnded(answer, q.keywords);
-    setIsCorrect(correct);
-    setSubmitted(true);
-    answersRef.current = [...answersRef.current, { q, userAnswer: answer, correct }];
+  function reveal() {
+    if (revealed || !answer.trim()) return;
+    setRevealed(true);
   }
 
-  function next() {
+  function selfMark(correct) {
+    answersRef.current = [...answersRef.current, { q, userAnswer: answer, correct }];
     if (idx+1>=questions.length) {
       const allA = answersRef.current;
       const score = allA.filter(a=>a.correct).length;
@@ -751,7 +739,7 @@ function OpenEndedQuizScreen({ subject, onDone, onBack }) {
       allA.forEach(a=>{ const sec=a.q.section; if(!bd[sec]) bd[sec]={correct:0,total:0}; bd[sec].total++; if(a.correct) bd[sec].correct++; });
       onDone(score, questions.length, bd, (Date.now()-startTime)/60000);
     } else {
-      setIdx(i=>i+1); setAnswer(''); setSubmitted(false); setIsCorrect(false); setShowHint(false);
+      setIdx(i=>i+1); setAnswer(''); setRevealed(false); setShowHint(false);
     }
   }
 
@@ -784,7 +772,7 @@ function OpenEndedQuizScreen({ subject, onDone, onBack }) {
           <p className="text-base font-semibold text-gray-800 leading-relaxed">{q.q}</p>
         </div>
 
-        {!submitted && (
+        {!revealed && (
           <>
             <textarea value={answer} onChange={e=>setAnswer(e.target.value)} rows={4}
               placeholder="Type your answer here..."
@@ -799,26 +787,34 @@ function OpenEndedQuizScreen({ subject, onDone, onBack }) {
                 <p className="text-xs text-blue-800">{q.hint}</p>
               </div>
             )}
-            <button onClick={submit} disabled={!answer.trim()}
+            <button onClick={reveal} disabled={!answer.trim()}
               className={`${cfg.btn} disabled:opacity-40 text-white font-bold py-3 rounded-xl transition-all pop`}>
-              Submit Answer
+              Show Model Answer
             </button>
           </>
         )}
 
-        {submitted && (
+        {revealed && (
           <>
             <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
               <p className="text-xs text-gray-500 font-semibold mb-1">Your answer:</p>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">{answer}</p>
             </div>
-            <div className={`rounded-xl p-4 pop ${isCorrect?'bg-green-50 border border-green-200':'bg-red-50 border border-red-200'}`}>
-              <p className="font-semibold mb-1 text-sm">{isCorrect?'✅ Correct!':'❌ Not quite — here is the model answer:'}</p>
+            <div className="rounded-xl p-4 pop bg-violet-50 border border-violet-200">
+              <p className="font-semibold mb-1 text-sm text-violet-800">📖 Model Answer</p>
               {q.exp && <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{__html:q.exp}} />}
             </div>
-            <button onClick={next} className={`${cfg.btn} text-white font-bold py-3 rounded-xl transition-all pop`}>
-              {idx+1>=questions.length?'See Results 🎉':'Next →'}
-            </button>
+            <p className="text-xs text-gray-500 text-center">Compare your answer with the model answer above — how did you do?</p>
+            <div className="flex gap-3">
+              <button onClick={()=>selfMark(true)}
+                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl transition-all pop">
+                ✅ Got it right
+              </button>
+              <button onClick={()=>selfMark(false)}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 rounded-xl transition-all pop">
+                📚 Need more practice
+              </button>
+            </div>
           </>
         )}
       </div>
