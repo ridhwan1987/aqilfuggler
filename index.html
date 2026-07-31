@@ -260,9 +260,9 @@ const LS = {
 
 function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
 
-function saveResult(subject, mode, score, total, breakdown, difficulty, durationMin) {
+function saveResult(subject, mode, score, total, breakdown, difficulty, durationMin, answers) {
   const all = LS.get('results',[]);
-  all.push({ iso:new Date().toISOString(), date:new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'}), subject, mode, score, total, pct:Math.round((score/total)*100), breakdown, difficulty: difficulty || 'unknown', ...(typeof durationMin==='number' ? {durationMin} : {}) });
+  all.push({ iso:new Date().toISOString(), date:new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'}), subject, mode, score, total, pct:Math.round((score/total)*100), breakdown, difficulty: difficulty || 'unknown', ...(typeof durationMin==='number' ? {durationMin} : {}), ...(Array.isArray(answers) && answers.length ? {answers} : {}) });
   LS.set('results', all);
 }
 function getResults(){ return LS.get('results',[]); }
@@ -737,7 +737,8 @@ function OpenEndedQuizScreen({ subject, onDone, onBack }) {
       const score = allA.filter(a=>a.correct).length;
       const bd = {};
       allA.forEach(a=>{ const sec=a.q.section; if(!bd[sec]) bd[sec]={correct:0,total:0}; bd[sec].total++; if(a.correct) bd[sec].correct++; });
-      onDone(score, questions.length, bd, (Date.now()-startTime)/60000);
+      const loggedAnswers = allA.map(a=>({ q:a.q.q, section:a.q.section, userAnswer:a.userAnswer, modelAnswer:a.q.exp, correct:a.correct }));
+      onDone(score, questions.length, bd, (Date.now()-startTime)/60000, loggedAnswers);
     } else {
       setIdx(i=>i+1); setAnswer(''); setRevealed(false); setShowHint(false);
     }
@@ -929,14 +930,14 @@ function DrillScreen({ subject, topic, onDone, onBack, onHome }) {
 // ═══════════════════════════════════════════════════════════════
 // SCREEN: RESULTS
 // ═══════════════════════════════════════════════════════════════
-function ResultsScreen({ subject, score, total, breakdown, mode, difficulty, durationMin, onHome, onRetry }) {
+function ResultsScreen({ subject, score, total, breakdown, mode, difficulty, durationMin, answers, onHome, onRetry }) {
   const cfg = CFG[subject];
   const pct = Math.round((score/total)*100);
   const star = pct>=90?'🏆':pct>=70?'🌟':pct>=50?'👍':'💪';
   const msg = pct>=90?'Outstanding!':pct>=70?'Great job!':pct>=50?'Good effort!':'Keep going!';
   const showConf = pct>=70;
 
-  useEffect(()=>{ saveResult(subject, mode, score, total, breakdown, difficulty, durationMin); syncToFirebase(); }, []);
+  useEffect(()=>{ saveResult(subject, mode, score, total, breakdown, difficulty, durationMin, answers); syncToFirebase(); }, []);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6" style={{ backgroundColor:cfg.bg }}>
@@ -1071,6 +1072,7 @@ function ParentDashboard({ onBack }) {
   const [fbInput, setFbInput] = useState(getFirebaseUrl());
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
+  const [expandedIdx, setExpandedIdx] = useState(null);
 
   function tryPin() {
     if (pin === PARENT_PIN) { setOpen(true); setErr(''); }
@@ -1173,14 +1175,33 @@ function ParentDashboard({ onBack }) {
           <h3 className="text-base font-bold text-gray-800 mb-3">Recent Sessions</h3>
           <p className="text-xs text-gray-400 mb-2">Time = actual minutes spent on the quiz. Older sessions (before this was tracked) show an estimate based on the gap to the previous session instead, or "—" if that gap isn't known.</p>
           <div className="space-y-2">
-            {attachSessionMinutes(all).slice().reverse().map((r, i) => (
-              <div key={i} className="flex justify-between items-center text-sm py-2 border-b last:border-0 gap-2">
-                <span className="text-gray-600">{r.date} — {r.subject} ({r.mode})</span>
-                <span style={{background:'#eee',borderRadius:'4px',padding:'2px 6px',fontSize:'0.75em',textTransform:'capitalize'}}>{sessionLabel(r)}</span>
-                <span className="text-xs text-gray-500 whitespace-nowrap">{r._mins !== null ? `${r._mins.toFixed(1)} min` : '—'}</span>
-                <span className={`font-bold ${r.pct >= 70 ? 'text-emerald-600' : 'text-red-500'}`}>{r.pct}%</span>
-              </div>
-            ))}
+            {attachSessionMinutes(all).slice().reverse().map((r, i) => {
+              const hasAnswers = Array.isArray(r.answers) && r.answers.length > 0;
+              const isOpen = expandedIdx === i;
+              return (
+                <div key={i} className="border-b last:border-0">
+                  <div className={`flex justify-between items-center text-sm py-2 gap-2 ${hasAnswers ? 'cursor-pointer' : ''}`}
+                    onClick={() => hasAnswers && setExpandedIdx(isOpen ? null : i)}>
+                    <span className="text-gray-600">{r.date} — {r.subject} ({r.mode}){hasAnswers && <span className="text-blue-500 ml-1">{isOpen ? '▲' : '▼ view answers'}</span>}</span>
+                    <span style={{background:'#eee',borderRadius:'4px',padding:'2px 6px',fontSize:'0.75em',textTransform:'capitalize'}}>{sessionLabel(r)}</span>
+                    <span className="text-xs text-gray-500 whitespace-nowrap">{r._mins !== null ? `${r._mins.toFixed(1)} min` : '—'}</span>
+                    <span className={`font-bold ${r.pct >= 70 ? 'text-emerald-600' : 'text-red-500'}`}>{r.pct}%</span>
+                  </div>
+                  {hasAnswers && isOpen && (
+                    <div className="pb-3 space-y-2">
+                      {r.answers.map((a, j) => (
+                        <div key={j} className="bg-gray-50 rounded-lg p-3 text-xs">
+                          <p className="font-semibold text-gray-700 mb-1">{j+1}. {a.q}</p>
+                          <p className="text-gray-500 mb-1"><span className="font-semibold">Aqil wrote:</span> {a.userAnswer || '(no answer)'}</p>
+                          <p className="text-gray-400 mb-1"><span className="font-semibold">Model answer:</span> <span dangerouslySetInnerHTML={{__html: a.modelAnswer || ''}} /></p>
+                          <p className={a.correct ? 'text-emerald-600 font-semibold' : 'text-amber-600 font-semibold'}>{a.correct ? '✅ Self-marked: Got it right' : '📚 Self-marked: Need more practice'}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {all.length === 0 && <p className="text-gray-400 text-sm">No sessions yet.</p>}
           </div>
         </div>
@@ -1215,7 +1236,7 @@ function App() {
     else if (m==='openended') { setMode('openended'); setScreen('openended'); }
     else { setMode('quiz'); setScreen('quiz'); }
   }
-  function onDone(score, total, breakdown, durationMin) { setResult({score,total,breakdown,difficulty,durationMin}); setScreen('result'); }
+  function onDone(score, total, breakdown, durationMin, answers) { setResult({score,total,breakdown,difficulty,durationMin,answers}); setScreen('result'); }
   function onDrillDone(ok, durationMin) { setResult({score:10,total:10,breakdown:{[topic]:{correct:10,total:10}},durationMin}); setScreen('result'); }
 
   return (
@@ -1227,7 +1248,7 @@ function App() {
       {screen==='drill' && <DrillScreen subject={subject} topic={topic} onDone={onDrillDone} onBack={()=>setScreen('select-topic')} onHome={()=>setScreen('home')} />}
       {screen==='openended' && <OpenEndedQuizScreen subject={subject} onDone={onDone} onBack={()=>setScreen('home')} />}
       {screen==='result' && result && (
-        <ResultsScreen subject={subject} score={result.score} total={result.total} breakdown={result.breakdown} mode={mode} difficulty={result.difficulty} durationMin={result.durationMin}
+        <ResultsScreen subject={subject} score={result.score} total={result.total} breakdown={result.breakdown} mode={mode} difficulty={result.difficulty} durationMin={result.durationMin} answers={result.answers}
           onHome={()=>setScreen('home')}
           onRetry={()=>{ if(mode==='drill') setScreen('select-topic'); else setScreen('subject-select'); }} />
       )}
